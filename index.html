@@ -44,6 +44,12 @@
   .contact .slogan{margin-top:12px;font-weight:700;letter-spacing:1px}
 
   footer{text-align:center;color:var(--muted);font-size:.82rem;padding:26px 20px 40px}
+
+  /* 自動下架：過期卡片隱藏、全空時顯示提示 */
+  .empty-state{margin-top:10px}
+  .empty-card{max-width:640px;margin:0 auto;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);text-align:center;padding:48px 28px}
+  .empty-card h2{font-size:1.4rem;font-weight:900;color:var(--brand-dark);margin-top:10px}
+  .empty-card p{margin-top:10px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -56,7 +62,7 @@
   <div class="wrap">
     <div class="listing">
       <!-- ▼ 物件卡片：每新增一筆物件，複製一個 .item ▼ -->
-      <a class="item" href="dongfeng85/">
+      <a class="item" href="dongfeng85/" data-auction="2026-08-04">
         <img src="dongfeng85/dongfeng85.jpg" alt="台南北區東豐路85巷 8層電梯透天">
         <div class="body">
           <div class="tag-row">
@@ -68,7 +74,7 @@
           <div class="price">底價 <b>4,032</b> 萬</div>
         </div>
       </a>
-      <a class="item" href="chongren52/">
+      <a class="item" href="chongren52/" data-auction="2026-08-05">
         <img src="chongren52/chongren52.jpg" alt="高雄左營區重仁路 甜蜜生活 電梯大樓">
         <div class="body">
           <div class="tag-row">
@@ -81,6 +87,14 @@
         </div>
       </a>
       <!-- ▲ 物件卡片結束 ▲ -->
+    </div>
+
+    <div class="empty-state" hidden>
+      <div class="empty-card">
+        <div style="font-size:3rem">🏗️</div>
+        <h2>新物件即將上架</h2>
+        <p>目前無待標物件，歡迎與我們聯繫，掌握第一手法拍好物件！</p>
+      </div>
     </div>
 
     <div class="contact">
@@ -99,5 +113,16 @@
   </div>
 
   <footer>本頁面為物件資訊整理，法拍資訊以法院公告為準。智慧財產，抄襲必究。</footer>
+<script>
+(function(){
+  var GRACE=3, now=new Date(), any=false; // 拍賣日 + 3 天後自動隱藏
+  document.querySelectorAll(".item[data-auction]").forEach(function(a){
+    var d=new Date(a.dataset.auction+"T00:00:00+08:00");
+    d.setDate(d.getDate()+GRACE);
+    if(now>=d){ a.style.display="none"; } else { any=true; }
+  });
+  if(!any){ var e=document.querySelector(".empty-state"); if(e) e.hidden=false; }
+})();
+</script>
 </body>
 </html>

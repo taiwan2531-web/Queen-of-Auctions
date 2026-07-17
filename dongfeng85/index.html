@@ -76,9 +76,25 @@
     .grid2{grid-template-columns:1fr}
     th{width:42%}
   }
+
+  /* 自動下架機制 */
+  .offline-notice{display:none;padding:60px 20px 20px}
+  html.expired .offline-notice{display:block}
+  html.expired .hero,html.expired .wrap .facts,html.expired .wrap section,html.expired footer{display:none}
+  .offline-card{max-width:640px;margin:0 auto;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);text-align:center;padding:48px 28px}
+  .offline-card .offline-emoji{font-size:3rem}
+  .offline-card h1{font-size:1.6rem;font-weight:900;color:var(--brand-dark);margin-top:10px}
+  .offline-card p{margin-top:12px;color:var(--muted)}
 </style>
 </head>
 <body>
+  <div class="offline-notice">
+    <div class="offline-card">
+      <div class="offline-emoji">🔚</div>
+      <h1>本物件已到期下架</h1>
+      <p>本物件拍賣程序已結束，資訊已下架。<br>想了解更多法拍好物件，歡迎與我們聯繫！</p>
+    </div>
+  </div>
   <header class="hero">
     <img class="hero-photo" src="dongfeng85.jpg" alt="台南北區東豐路85巷 8層電梯透天 外觀">
     <div class="hero-inner">
@@ -182,5 +198,16 @@
   </div>
 
   <footer>本頁面為物件資訊整理，法拍資訊以法院公告為準。智慧財產，抄襲必究。</footer>
+<script>
+(function(){
+  var AUCTION="2026-08-04", GRACE=3; // 拍賣日 + 3 天後自動下架
+  var d=new Date(AUCTION+"T00:00:00+08:00");
+  d.setDate(d.getDate()+GRACE);
+  if(new Date()>=d){
+    document.documentElement.classList.add("expired");
+    document.title="物件已下架｜法拍找慧瑜";
+  }
+})();
+</script>
 </body>
 </html>
