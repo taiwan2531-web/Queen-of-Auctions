@@ -11,7 +11,10 @@ html{scroll-behavior:smooth}
 body{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.7;-webkit-font-smoothing:antialiased}
 .wrap{max-width:1000px;margin:0 auto;padding:0 20px}
 .hero{background:var(--brand-dark)}
+.hero-photo-wrap{position:relative;max-width:1000px;margin:0 auto}
 .hero-photo{display:block;width:100%;max-width:1000px;margin:0 auto;height:auto}
+.back-fab{position:absolute;right:12px;bottom:12px;display:inline-flex;align-items:center;gap:6px;background:rgba(18,55,111,.85);color:#fff;text-decoration:none;font-weight:800;font-size:.95rem;padding:9px 16px;border-radius:999px;border:1px solid rgba(255,255,255,.45)}
+.back-fab:hover,.back-fab:focus-visible{background:var(--brand)}
 .hero-inner{padding:30px 20px 60px;max-width:1000px;margin:0 auto;text-align:center;background:linear-gradient(120deg,var(--brand),var(--brand-dark));color:#fff}
 .badge-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}
 .badge{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);padding:6px 14px;border-radius:999px;font-size:.9rem;font-weight:600;letter-spacing:.5px}
@@ -82,7 +85,10 @@ html.expired .voice-fab{display:none}
     </div>
   </div>
   <header class="hero">
-    <img class="hero-photo" src="k2rojm.jpg" alt="⛳️屏東縣佳冬鄉進學街118號👍👍👍 理想家７❤️佳冬國小旁大地坪雙車庫3層四年透天🏠">
+    <div class="hero-photo-wrap">
+      <img class="hero-photo" src="k2rojm.jpg" alt="⛳️屏東縣佳冬鄉進學街118號👍👍👍 理想家７❤️佳冬國小旁大地坪雙車庫3層四年透天🏠">
+      <a class="back-fab" href="../">🏠 返回總覽</a>
+    </div>
     <div class="hero-inner">
       <div class="btn-row" style="margin:0 0 22px">
         <a class="cbtn tel" href="tel:0917270656">📞 撥號 0917-270-656</a>

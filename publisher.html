@@ -311,7 +311,8 @@ function buildPropertyPage(d){
 '*{box-sizing:border-box;margin:0;padding:0}\nhtml{scroll-behavior:smooth}\n'+
 'body{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.7;-webkit-font-smoothing:antialiased}\n'+
 '.wrap{max-width:1000px;margin:0 auto;padding:0 20px}\n'+
-'.hero{background:var(--brand-dark)}\n.hero-photo{display:block;width:100%;max-width:1000px;margin:0 auto;height:auto}\n'+
+'.hero{background:var(--brand-dark)}\n.hero-photo-wrap{position:relative;max-width:1000px;margin:0 auto}\n.hero-photo{display:block;width:100%;max-width:1000px;margin:0 auto;height:auto}\n'+
+'.back-fab{position:absolute;right:12px;bottom:12px;display:inline-flex;align-items:center;gap:6px;background:rgba(18,55,111,.85);color:#fff;text-decoration:none;font-weight:800;font-size:.95rem;padding:9px 16px;border-radius:999px;border:1px solid rgba(255,255,255,.45)}\n.back-fab:hover,.back-fab:focus-visible{background:var(--brand)}\n'+
 '.hero-inner{padding:30px 20px 60px;max-width:1000px;margin:0 auto;text-align:center;background:linear-gradient(120deg,var(--brand),var(--brand-dark));color:#fff}\n'+
 '.badge-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}\n'+
 '.badge{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);padding:6px 14px;border-radius:999px;font-size:.9rem;font-weight:600;letter-spacing:.5px}\n'+
@@ -357,7 +358,7 @@ function buildPropertyPage(d){
 VOICE_CSS+
 '</style>\n</head>\n<body>\n'+
 '  <div class="offline-notice">\n    <div class="offline-card">\n      <div class="offline-emoji">🔚</div>\n      <h1>本物件已到期下架</h1>\n      <p>本物件拍賣程序已結束，資訊已下架。<br>想了解更多法拍好物件，歡迎與我們聯繫！</p>\n    </div>\n  </div>\n'+
-'  <header class="hero">\n    <img class="hero-photo" src="'+d.code+'.jpg" alt="'+d.address+' '+d.name+'">\n'+
+'  <header class="hero">\n    <div class="hero-photo-wrap">\n      <img class="hero-photo" src="'+d.code+'.jpg" alt="'+d.address+' '+d.name+'">\n      <a class="back-fab" href="../">🏠 返回總覽</a>\n    </div>\n'+
 '    <div class="hero-inner">\n'+
 '      <div class="btn-row" style="margin:0 0 22px">\n'+
 '        <a class="cbtn tel" href="tel:0917270656">📞 撥號 0917-270-656</a>\n'+
