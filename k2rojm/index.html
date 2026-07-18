@@ -224,25 +224,29 @@ html.expired .voice-fab{display:none}
     else{audio.pause();}
   });
 
-  // 嘗試直接自動播放；被瀏覽器擋下時，改成「第一次互動」立刻播
+  // 嘗試直接自動播放；被瀏覽器擋下時（手機常見），改成「碰到螢幕任何地方就播」。
+  // 重點：每次互動都重試、直到真的播出來才解除監聽（滑動被 iOS 拒絕也不會就此放棄）。
+  var started=false;
+  var GES=["pointerdown","touchstart","touchend","click","keydown"];
+  function cleanup(){GES.forEach(function(e){document.removeEventListener(e,onGesture)})}
+  function attempt(){
+    if(started||!audio.paused){cleanup();return;}
+    var p=audio.play();
+    if(p&&p.then){
+      p.then(function(){started=true;cleanup();}).catch(function(){});
+    }
+  }
+  function onGesture(){attempt()}
   function tryAutoplay(){
     var p=audio.play();
-    if(p&&p.catch){
-      p.catch(function(){
-        var once=function(){
-          document.removeEventListener("pointerdown",once);
-          document.removeEventListener("touchstart",once);
-          document.removeEventListener("keydown",once);
-          document.removeEventListener("scroll",once);
-          if(audio.paused)audio.play();
-        };
-        document.addEventListener("pointerdown",once);
-        document.addEventListener("touchstart",once,{passive:true});
-        document.addEventListener("keydown",once);
-        document.addEventListener("scroll",once,{passive:true,once:true});
+    if(p&&p.then){
+      p.then(function(){started=true;}).catch(function(){
+        GES.forEach(function(e){document.addEventListener(e,onGesture,{passive:true})});
       });
     }
   }
+  // 使用者自己按了暫停後，就不要再被觸碰喚醒
+  btn.addEventListener("click",function(){started=true;cleanup();});
   if(document.readyState==="complete")tryAutoplay();
   else window.addEventListener("load",tryAutoplay);
 })();
