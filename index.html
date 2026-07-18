@@ -1,0 +1,105 @@
+﻿<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>法拍精選物件總覽｜法拍找慧瑜</title>
+<style>
+  :root{
+    --brand:#1a4fa0; --brand-dark:#12376f; --accent:#e63c3c;
+    --ink:#1c2634; --muted:#64708b; --line:#e4e9f2; --bg:#f4f6fb; --card:#fff;
+    --radius:16px; --shadow:0 10px 30px rgba(18,55,111,.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.7;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 20px}
+
+  .hero{background:linear-gradient(120deg,var(--brand),var(--brand-dark));color:#fff;text-align:center;padding:56px 20px 64px}
+  .hero .eyebrow{letter-spacing:4px;font-size:.95rem;opacity:.9}
+  .hero h1{font-size:clamp(1.8rem,5.5vw,2.8rem);font-weight:900;letter-spacing:2px;margin-top:6px}
+  .hero p{margin-top:12px;opacity:.92;font-size:clamp(.95rem,2.6vw,1.1rem)}
+
+  .listing{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px;margin-top:-30px;position:relative;z-index:2;padding-bottom:10px}
+  .item{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;text-decoration:none;color:var(--ink);display:flex;flex-direction:column;transition:transform .2s,box-shadow .2s}
+  .item:hover,.item:focus-visible{transform:translateY(-4px);box-shadow:0 16px 40px rgba(18,55,111,.18)}
+  .item img{width:100%;aspect-ratio:16/10;object-fit:cover;display:block}
+  .item .body{padding:16px 18px 20px}
+  .tag-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  .tag{font-size:.78rem;font-weight:700;padding:3px 10px;border-radius:999px;background:#eef3fb;color:var(--brand)}
+  .tag.hot{background:var(--accent);color:#fff}
+  .item h2{font-size:1.1rem;font-weight:800;line-height:1.5}
+  .item .addr{font-size:.88rem;color:var(--muted);margin-top:4px}
+  .item .price{margin-top:10px;font-size:1.05rem;font-weight:700;color:var(--muted)}
+  .item .price b{font-size:1.5rem;font-weight:900;color:var(--accent);letter-spacing:.5px}
+
+  .contact{margin-top:36px;background:linear-gradient(120deg,var(--brand),var(--brand-dark));color:#fff;border-radius:var(--radius);padding:30px 24px;text-align:center}
+  .contact .eyebrow{font-size:.95rem;opacity:.9;letter-spacing:2px}
+  .contact .who{font-size:1.6rem;font-weight:900;letter-spacing:2px;margin-top:2px}
+  .btn-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+  .cbtn{display:inline-flex;align-items:center;gap:10px;padding:12px 26px;border-radius:999px;font-size:1.2rem;font-weight:800;text-decoration:none;letter-spacing:1px;color:#fff}
+  .cbtn.line{background:#06c755}
+  .cbtn.tel{background:#fff;color:var(--brand-dark)}
+  .cbtn:focus-visible{outline:3px solid #fff;outline-offset:2px}
+  .contact .co{margin-top:18px;font-size:.88rem;opacity:.9;line-height:1.9}
+  .contact .slogan{margin-top:12px;font-weight:700;letter-spacing:1px}
+
+  footer{text-align:center;color:var(--muted);font-size:.82rem;padding:26px 20px 40px}
+
+  /* 自動下架：過期卡片隱藏、全空時顯示提示 */
+  .empty-state{margin-top:10px}
+  .empty-card{max-width:640px;margin:0 auto;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);text-align:center;padding:48px 28px}
+  .empty-card h2{font-size:1.4rem;font-weight:900;color:var(--brand-dark);margin-top:10px}
+  .empty-card p{margin-top:10px;color:var(--muted)}
+</style>
+</head>
+<body>
+  <header class="hero">
+    <div class="eyebrow">法拍找慧瑜</div>
+    <h1>法拍精選物件總覽</h1>
+    <p>專業代標｜負責點交｜代墊｜貸款　—　法拍資訊以法院公告為準</p>
+  </header>
+
+  <div class="wrap">
+    <div class="listing">
+      <!-- ▼ 物件卡片：每新增一筆物件，複製一個 .item ▼ -->
+      <!-- ▲ 物件卡片結束 ▲ -->
+    </div>
+
+    <div class="empty-state" hidden>
+      <div class="empty-card">
+        <div style="font-size:3rem">🏗️</div>
+        <h2>新物件即將上架</h2>
+        <p>目前無待標物件，歡迎與我們聯繫，掌握第一手法拍好物件！</p>
+      </div>
+    </div>
+
+    <div class="contact">
+      <div class="eyebrow">你的問題・我的專業</div>
+      <div class="who">總經理 陳慧瑜</div>
+      <div class="btn-row">
+        <a class="cbtn tel" href="tel:0917270656">📞 撥號 0917-270-656</a>
+        <a class="cbtn line" href="https://line.me/ti/p/ViiJn43Z7l" target="_blank" rel="noopener">💬 加 LINE　a0917270656</a>
+      </div>
+      <div class="slogan">專業代標｜負責點交｜代墊｜貸款</div>
+      <div class="co">
+        一零四高欣仲介經紀有限公司｜統一編號 13197081<br>
+        不動產經紀人：鄭淑靜（96）高市字第0330號
+      </div>
+    </div>
+  </div>
+
+  <footer>本頁面為物件資訊整理，法拍資訊以法院公告為準。智慧財產，抄襲必究。</footer>
+<script>
+(function(){
+  var GRACE=3, now=new Date(), any=false; // 拍賣日 + 3 天後自動隱藏
+  document.querySelectorAll(".item[data-auction]").forEach(function(a){
+    var d=new Date(a.dataset.auction+"T00:00:00+08:00");
+    d.setDate(d.getDate()+GRACE);
+    if(now>=d){ a.style.display="none"; } else { any=true; }
+  });
+  if(!any){ var e=document.querySelector(".empty-state"); if(e) e.hidden=false; }
+})();
+</script>
+</body>
+</html>
+

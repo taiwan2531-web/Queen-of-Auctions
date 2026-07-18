@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>法拍物件網頁發布工具</title>
+<style>
+:root{
+  --brand:#1a4fa0; --brand-dark:#12376f; --accent:#e63c3c;
+  --ink:#1c2634; --muted:#64708b; --line:#e4e9f2; --bg:#f4f6fb; --card:#fff;
+  --radius:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.7;padding:20px}
+.container{max-width:900px;margin:0 auto}
+.header{background:linear-gradient(120deg,var(--brand),var(--brand-dark));color:#fff;padding:26px 20px;border-radius:var(--radius);text-align:center;margin-bottom:20px}
+.header h1{font-size:1.8rem;font-weight:900;margin-bottom:6px}
+.header p{opacity:.9;font-size:.95rem}
+
+.tabs{display:flex;gap:10px;margin-bottom:20px}
+.tab-btn{flex:1;padding:14px;border:none;border-radius:12px;font-size:1.05rem;font-weight:800;cursor:pointer;background:var(--card);color:var(--muted);box-shadow:0 2px 8px rgba(0,0,0,.08);transition:.2s}
+.tab-btn.active{background:var(--brand);color:#fff}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+.section{background:var(--card);padding:20px;border-radius:var(--radius);box-shadow:0 2px 8px rgba(0,0,0,.1);margin-bottom:20px}
+.section h3{color:var(--brand);margin-bottom:14px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.form-grid.full{grid-template-columns:1fr}
+label{display:block;font-weight:600;color:var(--brand);margin-bottom:5px;font-size:.9rem}
+input[type="text"],input[type="date"],input[type="number"],input[type="password"],select,textarea{
+  width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:1rem;font-family:inherit;background:#fff}
+textarea{resize:vertical;min-height:70px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(26,79,160,.1)}
+.hint{font-size:.82rem;color:var(--muted);margin-top:4px}
+
+.img-upload input[type="file"]{display:none}
+.img-upload-btn{display:block;padding:12px;background:var(--bg);border:2px dashed var(--brand);border-radius:8px;text-align:center;cursor:pointer;font-weight:600;color:var(--brand)}
+.img-upload-btn:hover{background:rgba(26,79,160,.08)}
+.img-preview{max-width:100%;max-height:200px;border-radius:8px;margin-top:10px;display:none}
+
+.button-group{display:flex;gap:12px;margin-top:6px;flex-wrap:wrap}
+button.action{padding:12px 24px;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;transition:.2s}
+.btn-primary{background:var(--brand);color:#fff}
+.btn-primary:hover{background:var(--brand-dark)}
+.btn-primary:disabled{background:var(--muted);cursor:not-allowed}
+.btn-secondary{background:var(--line);color:var(--brand)}
+.btn-danger{background:var(--accent);color:#fff}
+.btn-danger:disabled{background:var(--muted);cursor:not-allowed}
+
+.status{padding:12px 14px;border-radius:8px;margin-top:14px;display:none;word-break:break-all}
+.status.success{background:#ecfdf5;color:#065f46;border-left:4px solid #10b981;display:block}
+.status.error{background:#fef2f2;color:#991b1b;border-left:4px solid #ef4444;display:block}
+.status.loading{background:#eff6ff;color:#1e40af;border-left:4px solid #3b82f6;display:block}
+.info-box{background:#eff6ff;border-left:4px solid var(--brand);padding:10px 12px;border-radius:8px;font-size:.88rem;color:#1e40af;margin-top:10px}
+
+/* 管理清單 */
+.prop-row{display:flex;align-items:center;gap:14px;padding:14px 4px;border-bottom:1px solid var(--line)}
+.prop-row:last-child{border-bottom:none}
+.prop-info{flex:1;min-width:0}
+.prop-info .t{font-weight:800}
+.prop-info .m{font-size:.85rem;color:var(--muted)}
+.pill{font-size:.78rem;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap}
+.pill.on{background:#ecfdf5;color:#065f46}
+.pill.off{background:#fef2f2;color:#991b1b}
+@media (max-width:768px){.form-grid{grid-template-columns:1fr}.prop-row{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>法拍物件網頁發布工具</h1>
+    <p>發布新物件（自動加總覽卡片）｜管理員手動下架</p>
+  </div>
+
+  <!-- 共用：GitHub Token -->
+  <div class="section">
+    <h3>🔑 GitHub Token</h3>
+    <div class="form-grid full">
+      <div>
+        <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxx">
+        <label style="margin-top:8px;font-weight:400;color:var(--muted)">
+          <input type="checkbox" id="rememberToken" style="width:auto"> 記住 Token（只存在這台電腦的瀏覽器）
+        </label>
+        <div class="info-box">💡 需要 repo 權限。<a href="https://github.com/settings/tokens" target="_blank" style="color:inherit;text-decoration:underline">前往建立 token</a>　⚠️ Token 等於 GitHub 鑰匙，請勿外流。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="publish">📤 發布新物件</button>
+    <button class="tab-btn" data-tab="manage">🛠️ 管理物件（下架）</button>
+  </div>
+
+  <!-- ===== 發布分頁 ===== -->
+  <div class="tab-panel active" id="panel-publish">
+    <form id="publishForm">
+      <div class="section">
+        <h3>物件基本資訊</h3>
+        <div class="form-grid">
+          <div>
+            <label>物件英文代號 *</label>
+            <input type="text" id="propCode" placeholder="例：dongfeng85（小寫英文+數字）" pattern="[a-z0-9-]+" required>
+            <div class="hint">會成為網址的一部分：…/auction-listings/<b>代號</b>/</div>
+          </div>
+          <div>
+            <label>物件名稱（卡片標題）*</label>
+            <input type="text" id="name" placeholder="例：成大商圈 8層電梯透天（25間套房）" required>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div><label>地址 *</label><input type="text" id="address" placeholder="例：台南市北區東豐路85巷24號" required></div>
+          <div><label>拍賣單位／法院</label><input type="text" id="court" placeholder="例：台南法院、金服公司（金拍）"></div>
+        </div>
+        <div class="form-grid">
+          <div><label>拍賣日期 *</label><input type="date" id="auctionDate" required></div>
+          <div><label>拍別 *</label><input type="number" id="auctionRound" placeholder="例：3" min="1" max="10" required></div>
+        </div>
+        <div class="form-grid">
+          <div><label>底價（萬元）*</label><input type="number" id="basePrice" placeholder="例：4032" required></div>
+          <div><label>保證金（萬元）*</label><input type="number" id="deposit" placeholder="例：807" required></div>
+        </div>
+        <div class="form-grid">
+          <div><label>房屋格局 *</label><input type="text" id="layout" placeholder="例：3房2廳2衛・1車位" required></div>
+          <div><label>坪數 *</label><input type="text" id="area" placeholder="例：總坪數 55 坪" required></div>
+        </div>
+        <div class="form-grid">
+          <div>
+            <label>點交狀態 *</label>
+            <select id="handover" required>
+              <option value="">請選擇</option>
+              <option value="有點交">有點交</option>
+              <option value="不點交">不點交</option>
+            </select>
+          </div>
+          <div><label>交通機能</label><input type="text" id="traffic" placeholder="例：左營高鐵車程 3 分鐘"></div>
+        </div>
+        <div class="form-grid">
+          <div><label>購物機能</label><input type="text" id="facilities" placeholder="例：7-11、全聯、新光三越"></div>
+          <div><label>鄰近學校</label><input type="text" id="schools" placeholder="例：福山國小、左營國中"></div>
+        </div>
+        <div class="form-grid full">
+          <div><label>Google 地圖連結</label><input type="text" id="mapUrl" placeholder="https://reurl.cc/xxxx"></div>
+        </div>
+        <div class="form-grid full">
+          <div class="img-upload">
+            <label>物件圖片 *</label>
+            <input type="file" id="image" accept="image/*" required>
+            <div class="img-upload-btn" onclick="document.getElementById('image').click()">📸 點擊上傳圖片（JPG/PNG）</div>
+            <img id="preview" class="img-preview">
+          </div>
+        </div>
+        <div class="form-grid full">
+          <div class="img-upload">
+            <label>語音介紹 mp3（選填）</label>
+            <input type="file" id="voiceFile" accept="audio/mpeg,audio/mp3,.mp3">
+            <div class="img-upload-btn" onclick="document.getElementById('voiceFile').click()">🔊 點擊上傳語音檔（mp3）</div>
+            <div class="hint" id="voiceHint">附上後物件頁會有「聽介紹」按鈕，點頁面自動播放。可請 Claude 用法拍女王的聲音生成。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button type="submit" class="action btn-primary" id="publishBtn">🚀 發布（物件頁＋總覽卡片）</button>
+        <button type="button" class="action btn-secondary" onclick="document.getElementById('publishForm').reset();document.getElementById('preview').style.display='none'">🔄 清空表單</button>
+      </div>
+      <div id="pubStatus" class="status"></div>
+    </form>
+  </div>
+
+  <!-- ===== 管理分頁 ===== -->
+  <div class="tab-panel" id="panel-manage">
+    <div class="section">
+      <h3>目前上架中的物件</h3>
+      <div class="button-group" style="margin-bottom:10px">
+        <button type="button" class="action btn-primary" id="loadBtn">📋 載入物件清單</button>
+      </div>
+      <div id="propList"></div>
+      <div class="info-box">🔻「下架」會：① 從總覽移除卡片　② 物件頁改為「已到期下架」（保留聯絡卡）。檔案仍留在倉庫，之後收工時可實際刪除。</div>
+      <div id="mgStatus" class="status"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ========= 共用 ========= */
+var OWNER='taiwan2531-web', REPO='Queen-of-Auctions';
+var SITE='https://taiwan2531-web.github.io/Queen-of-Auctions/';
+function api(path){ return 'https://api.github.com/repos/'+OWNER+'/'+REPO+'/contents/'+path; }
+function b64encode(str){ return btoa(unescape(encodeURIComponent(str))); }   // UTF-8 安全編碼
+function b64decode(b64){ return decodeURIComponent(escape(atob(b64.replace(/\n/g,'')))); }
+function getToken(){
+  var t=document.getElementById('ghToken').value.trim();
+  if(!t) throw new Error('請先填入 GitHub Token');
+  return t;
+}
+async function ghGet(path){
+  var r=await fetch(api(path),{headers:{'Authorization':'token '+getToken()}});
+  if(r.status===404) return null;
+  if(!r.ok) throw new Error('讀取 '+path+' 失敗（'+r.status+'）');
+  return r.json();
+}
+async function ghPut(path,content,message,sha){
+  var body={message:message,content:content};
+  if(sha) body.sha=sha;
+  var r=await fetch(api(path),{method:'PUT',headers:{'Authorization':'token '+getToken(),'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok){
+    var e=await r.json().catch(function(){return {};});
+    throw new Error('寫入 '+path+' 失敗（'+r.status+'）'+(e.message||''));
+  }
+  return r.json();
+}
+
+/* Token 記憶 */
+(function(){
+  var saved=localStorage.getItem('gh_token_auction');
+  if(saved){ document.getElementById('ghToken').value=saved; document.getElementById('rememberToken').checked=true; }
+  document.getElementById('rememberToken').addEventListener('change',saveTok);
+  document.getElementById('ghToken').addEventListener('input',saveTok);
+  function saveTok(){
+    if(document.getElementById('rememberToken').checked) localStorage.setItem('gh_token_auction',document.getElementById('ghToken').value.trim());
+    else localStorage.removeItem('gh_token_auction');
+  }
+})();
+
+/* 分頁切換 */
+document.querySelectorAll('.tab-btn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active')});
+    document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active')});
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* 圖片預覽 */
+document.getElementById('image').addEventListener('change',function(e){
+  var f=e.target.files[0];
+  if(f){
+    var rd=new FileReader();
+    rd.onload=function(ev){ var p=document.getElementById('preview'); p.src=ev.target.result; p.style.display='block'; };
+    rd.readAsDataURL(f);
+  }
+});
+
+/* 語音檔選取提示 */
+document.getElementById('voiceFile').addEventListener('change',function(e){
+  var f=e.target.files[0];
+  document.getElementById('voiceHint').textContent = f ? ('已選：'+f.name) : '附上後物件頁會有「聽介紹」按鈕，點頁面自動播放。可請 Claude 用法拍女王的聲音生成。';
+});
+
+/* ========= 發布 ========= */
+var VOICE_CSS =
+'.voice-fab{position:fixed;right:18px;bottom:18px;z-index:99;display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border:none;border-radius:999px;background:var(--accent);color:#fff;font-size:1rem;font-weight:800;letter-spacing:1px;box-shadow:0 8px 24px rgba(0,0,0,.28);cursor:pointer;font-family:inherit}\n'+
+'.voice-fab:not(.playing){animation:voicepulse 2s infinite}\n'+
+'@keyframes voicepulse{0%{box-shadow:0 0 0 0 rgba(230,60,60,.45)}70%{box-shadow:0 0 0 16px rgba(230,60,60,0)}100%{box-shadow:0 0 0 0 rgba(230,60,60,0)}}\n'+
+'html.expired .voice-fab{display:none}\n';
+var VOICE_HTML =
+'  <button class="voice-fab" id="voiceBtn" type="button" aria-label="播放物件語音介紹">🔊 <span id="voiceLabel">聽介紹</span></button>\n'+
+'  <audio id="narration" src="voice.mp3" preload="auto"></audio>\n'+
+'<scr'+'ipt>\n(function(){\n'+
+'  var au=document.getElementById("narration"),btn=document.getElementById("voiceBtn"),lb=document.getElementById("voiceLabel");\n'+
+'  function setUI(p){btn.classList.toggle("playing",p);lb.textContent=p?"⏹ 停止":"聽介紹";}\n'+
+'  function play(){\n'+
+'    au.play().then(function(){setUI(true);}).catch(function(e){\n'+
+'      console.log("Autoplay prevented:", e);\n'+
+'    });\n'+
+'  }\n'+
+'  btn.addEventListener("click",function(e){\n'+
+'    e.stopPropagation();\n'+
+'    if(au.paused){play();} else {au.pause();au.currentTime=0;setUI(false);}\n'+
+'  });\n'+
+'  au.addEventListener("ended",function(){setUI(false);au.currentTime=0;});\n'+
+'  \n'+
+'  play();\n'+
+'  \n'+
+'  var fired=false;\n'+
+'  function autoPlayOnGesture(e){\n'+
+'    if(fired)return;\n'+
+'    if(e.target.closest("#voiceBtn")||e.target.closest("a"))return;\n'+
+'    if(document.documentElement.classList.contains("expired"))return;\n'+
+'    fired=true;\n'+
+'    play();\n'+
+'    events.forEach(function(evt){\n'+
+'      document.removeEventListener(evt, autoPlayOnGesture, true);\n'+
+'    });\n'+
+'  }\n'+
+'  var events=["click","touchstart","touchend","mousedown","keydown","scroll"];\n'+
+'  events.forEach(function(evt){\n'+
+'    document.addEventListener(evt, autoPlayOnGesture, true);\n'+
+'  });\n'+
+'})();\n</scr'+'ipt>\n';
+function buildPropertyPage(d){
+  var handoverTag = d.handover==='有點交' ? '<span class="ok">有點交</span>' : '<span class="hi">不點交</span>';
+  var noteHandover = d.handover==='有點交' ? '有點交' : '不點交';
+  var courtRow = d.court ? '<tr><th>拍賣單位</th><td>'+d.court+'</td></tr>' : '';
+  var mapLink = d.mapUrl ? '<a href="'+d.mapUrl+'" target="_blank" rel="noopener">📌 Google 地圖位置</a>' : '';
+  return '<!DOCTYPE html>\n<html lang="zh-Hant-TW">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>'+d.name+' — '+d.address+' 法拍物件</title>\n<style>\n'+
+':root{--brand:#1a4fa0;--brand-dark:#12376f;--accent:#e63c3c;--ink:#1c2634;--muted:#64708b;--line:#e4e9f2;--bg:#f4f6fb;--card:#fff;--radius:16px;--shadow:0 10px 30px rgba(18,55,111,.10)}\n'+
+'*{box-sizing:border-box;margin:0;padding:0}\nhtml{scroll-behavior:smooth}\n'+
+'body{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.7;-webkit-font-smoothing:antialiased}\n'+
+'.wrap{max-width:1000px;margin:0 auto;padding:0 20px}\n'+
+'.hero{background:var(--brand-dark)}\n.hero-photo{display:block;width:100%;max-width:1000px;margin:0 auto;height:auto}\n'+
+'.hero-inner{padding:30px 20px 60px;max-width:1000px;margin:0 auto;text-align:center;background:linear-gradient(120deg,var(--brand),var(--brand-dark));color:#fff}\n'+
+'.badge-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}\n'+
+'.badge{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);padding:6px 14px;border-radius:999px;font-size:.9rem;font-weight:600;letter-spacing:.5px}\n'+
+'.badge.hot{background:var(--accent);border-color:var(--accent)}\n'+
+'.hero-inner h1{font-size:clamp(1.6rem,5vw,2.6rem);font-weight:800;letter-spacing:1px;line-height:1.35;text-wrap:balance}\n'+
+'.hero-inner .addr{margin-top:12px;font-size:clamp(1rem,2.6vw,1.2rem);opacity:.95}\n'+
+'.price-tag{display:inline-flex;align-items:baseline;gap:8px;margin-top:26px;background:#fff;color:var(--brand-dark);padding:14px 30px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.18)}\n'+
+'.price-tag .label{font-size:1rem;font-weight:600;color:var(--muted)}\n'+
+'.price-tag .num{font-size:clamp(2rem,7vw,2.8rem);font-weight:900;color:var(--accent)}\n'+
+'.price-tag .unit{font-size:1.1rem;font-weight:700}\n'+
+'.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:-34px;position:relative;z-index:2}\n'+
+'.fact{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 12px;text-align:center}\n'+
+'.fact .k{font-size:.82rem;color:var(--muted)}\n'+
+'.fact .v{font-size:clamp(1.05rem,3.4vw,1.35rem);font-weight:800;color:var(--brand);margin-top:4px}\n'+
+'section{padding:40px 0 8px}\n'+
+'.sec-title{font-size:1.3rem;font-weight:800;color:var(--brand);display:flex;align-items:center;gap:10px;margin-bottom:18px}\n'+
+'.sec-title::before{content:"";width:6px;height:22px;border-radius:3px;background:var(--brand)}\n'+
+'.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:6px 24px;overflow:hidden}\n'+
+'table{width:100%;border-collapse:collapse}\nth,td{text-align:left;padding:14px 6px;border-bottom:1px solid var(--line);font-size:1rem}\n'+
+'tr:last-child th,tr:last-child td{border-bottom:none}\nth{width:38%;color:var(--muted);font-weight:600}\ntd{font-weight:700;color:var(--ink)}\n'+
+'td .hi{color:var(--accent)}\ntd .ok{color:#0e9f6e}\n'+
+'.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}\n'+
+'.amen{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--line);align-items:flex-start}\n.amen:last-child{border-bottom:none}\n'+
+'.amen .ico{flex:none;width:42px;height:42px;border-radius:12px;background:#eef3fb;color:var(--brand);display:grid;place-items:center;font-size:1.3rem}\n'+
+'.amen .t{font-size:.85rem;color:var(--muted)}\n.amen .d{font-weight:700}\n'+
+'.note-box{background:#fff8f0;border:1px solid #f6d9b8;border-radius:var(--radius);padding:18px 22px 18px 40px;color:#8a5a20;font-size:.95rem}\n.note-box li{margin:4px 0}\n'+
+'.links{display:flex;flex-wrap:wrap;gap:12px}\n'+
+'.links a{text-decoration:none;color:var(--brand);font-weight:700;font-size:.95rem;background:#eef3fb;padding:10px 16px;border-radius:999px;border:1px solid #dbe6f7;transition:.2s}\n'+
+'.links a:hover,.links a:focus-visible{background:var(--brand);color:#fff}\n'+
+'.contact{margin-top:36px;background:linear-gradient(120deg,var(--brand),var(--brand-dark));color:#fff;border-radius:var(--radius);padding:30px 24px;text-align:center}\n'+
+'.contact .eyebrow{font-size:.95rem;opacity:.9;letter-spacing:2px}\n.contact .who{font-size:1.6rem;font-weight:900;letter-spacing:2px;margin-top:2px}\n'+
+'.btn-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:16px}\n'+
+'.cbtn{display:inline-flex;align-items:center;gap:10px;padding:12px 26px;border-radius:999px;font-size:1.2rem;font-weight:800;text-decoration:none;letter-spacing:1px;color:#fff}\n'+
+'.cbtn.line{background:#06c755}\n.cbtn.tel{background:#fff;color:var(--brand-dark)}\n.cbtn:focus-visible{outline:3px solid #fff;outline-offset:2px}\n'+
+'.contact .co{margin-top:18px;font-size:.88rem;opacity:.9;line-height:1.9}\n.contact .slogan{margin-top:12px;font-weight:700;letter-spacing:1px}\n'+
+'footer{text-align:center;color:var(--muted);font-size:.82rem;padding:26px 20px 40px}\n'+
+'@media (max-width:640px){.facts{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}th{width:42%}}\n'+
+'.offline-notice{display:none;padding:60px 20px 20px}\nhtml.expired .offline-notice{display:block}\n'+
+'html.expired .hero,html.expired .wrap .facts,html.expired .wrap section,html.expired footer{display:none}\n'+
+'.offline-card{max-width:640px;margin:0 auto;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);text-align:center;padding:48px 28px}\n'+
+'.offline-card .offline-emoji{font-size:3rem}\n.offline-card h1{font-size:1.6rem;font-weight:900;color:var(--brand-dark);margin-top:10px}\n'+
+'.offline-card p{margin-top:12px;color:var(--muted)}\n'+
+(d.hasVoice?VOICE_CSS:'')+
+'</style>\n</head>\n<body>\n'+
+'  <div class="offline-notice">\n    <div class="offline-card">\n      <div class="offline-emoji">🔚</div>\n      <h1>本物件已到期下架</h1>\n      <p>本物件拍賣程序已結束，資訊已下架。<br>想了解更多法拍好物件，歡迎與我們聯繫！</p>\n    </div>\n  </div>\n'+
+'  <header class="hero">\n    <img class="hero-photo" src="'+d.code+'.jpg" alt="'+d.address+' '+d.name+'">\n'+
+'    <div class="hero-inner">\n      <div class="badge-row">\n'+
+'        <span class="badge">'+d.dateDisplay+' 第'+d.round+'拍</span>\n'+
+'        <span class="badge hot">'+d.handover+'</span>\n      </div>\n'+
+'      <h1>'+d.name+'</h1>\n      <div class="addr">📍 '+d.address+'</div>\n'+
+'      <div class="price-tag">\n        <span class="label">底價</span>\n        <span class="num">'+d.priceDisplay+'</span>\n        <span class="unit">萬</span>\n      </div>\n    </div>\n  </header>\n\n'+
+'  <div class="wrap">\n    <div class="facts">\n'+
+'      <div class="fact"><div class="k">格局</div><div class="v">'+d.layout+'</div></div>\n'+
+'      <div class="fact"><div class="k">坪數</div><div class="v">'+d.area+'</div></div>\n'+
+'      <div class="fact"><div class="k">拍賣日</div><div class="v">'+d.dateDisplay+'</div></div>\n'+
+'      <div class="fact"><div class="k">點交</div><div class="v">'+d.handover+'</div></div>\n    </div>\n\n'+
+'    <section>\n      <h2 class="sec-title">拍賣資訊</h2>\n      <div class="card">\n        <table>\n'+
+courtRow+
+'          <tr><th>拍賣日期</th><td>'+d.dateDisplay+'</td></tr>\n'+
+'          <tr><th>拍別</th><td>第 '+d.round+' 拍</td></tr>\n'+
+'          <tr><th>點交狀態</th><td>'+handoverTag+'</td></tr>\n'+
+'          <tr><th>底價</th><td><span class="hi">'+d.priceDisplay+' 萬</span></td></tr>\n'+
+'          <tr><th>保證金</th><td>'+d.deposit+' 萬</td></tr>\n        </table>\n      </div>\n    </section>\n\n'+
+'    <section>\n      <h2 class="sec-title">物件資料</h2>\n      <div class="card">\n        <table>\n'+
+'          <tr><th>地址</th><td>'+d.address+'</td></tr>\n'+
+'          <tr><th>房屋格局</th><td>'+d.layout+'</td></tr>\n'+
+'          <tr><th>坪數</th><td>'+d.area+'</td></tr>\n        </table>\n      </div>\n    </section>\n\n'+
+'    <section>\n      <h2 class="sec-title">生活與交通機能</h2>\n      <div class="grid2">\n        <div class="card">\n'+
+'          <div class="amen"><div class="ico">🚗</div><div><div class="t">交通</div><div class="d">'+(d.traffic||'待更新')+'</div></div></div>\n'+
+'          <div class="amen"><div class="ico">🛒</div><div><div class="t">購物</div><div class="d">'+(d.facilities||'待更新')+'</div></div></div>\n'+
+'        </div>\n        <div class="card">\n'+
+'          <div class="amen"><div class="ico">🏫</div><div><div class="t">學校</div><div class="d">'+(d.schools||'待更新')+'</div></div></div>\n'+
+'          <div class="amen"><div class="ico">🏠</div><div><div class="t">特色</div><div class="d">'+d.name+'</div></div></div>\n'+
+'        </div>\n      </div>\n    </section>\n\n'+
+'    <section>\n      <h2 class="sec-title">相關連結</h2>\n      <div class="links">\n        '+mapLink+'\n'+
+'        <a href="https://reurl.cc/OQ72Mg" target="_blank" rel="noopener">🏠 屋主急售好物件（選縣市）</a>\n'+
+'        <a href="https://reurl.cc/qVm9Kg" target="_blank" rel="noopener">🔎 法拍知識小學堂</a>\n      </div>\n    </section>\n\n'+
+'    <section>\n      <h2 class="sec-title">注意事項</h2>\n      <div class="note-box">\n        <ul>\n'+
+'          <li>法拍資訊一切以<strong>法院公告</strong>為準。</li>\n'+
+'          <li>本物件為<strong>'+noteHandover+'</strong>。</li>\n'+
+'          <li>無法看屋內、有日期限制。</li>\n'+
+'          <li>未得標免付費。</li>\n        </ul>\n      </div>\n    </section>\n\n'+
+'    <div class="contact">\n      <div class="eyebrow">你的問題・我的專業</div>\n      <div class="who">總經理 陳慧瑜</div>\n'+
+'      <div class="btn-row">\n        <a class="cbtn tel" href="tel:0917270656">📞 撥號 0917-270-656</a>\n'+
+'        <a class="cbtn line" href="https://line.me/ti/p/ViiJn43Z7l" target="_blank" rel="noopener">💬 加 LINE　a0917270656</a>\n      </div>\n'+
+'      <div class="slogan">專業代標｜負責點交｜代墊｜貸款</div>\n'+
+'      <div class="co">\n        一零四高欣仲介經紀有限公司｜統一編號 13197081<br>\n        不動產經紀人：鄭淑靜（96）高市字第0330號\n      </div>\n    </div>\n  </div>\n\n'+
+'  <footer>本頁面為物件資訊整理，法拍資訊以法院公告為準。智慧財產，抄襲必究。</footer>\n'+
+(d.hasVoice?VOICE_HTML:'')+
+'<scr'+'ipt>\n(function(){\n  var AUCTION="'+d.iso+'", GRACE=3; // 拍賣日 + 3 天後自動下架\n  var dd=new Date(AUCTION+"T00:00:00+08:00");\n  dd.setDate(dd.getDate()+GRACE);\n  if(new Date()>=dd){\n    document.documentElement.classList.add("expired");\n    document.title="物件已下架｜法拍找慧瑜";\n  }\n})();\n</scr'+'ipt>\n</body>\n</html>\n';
+}
+
+function buildCard(d){
+  return '      <a class="item" href="'+d.code+'/" data-auction="'+d.iso+'">\n'+
+'        <img src="'+d.code+'/'+d.code+'.jpg" alt="'+d.address+' '+d.name+'">\n'+
+'        <div class="body">\n          <div class="tag-row">\n'+
+'            <span class="tag">'+d.dateDisplay+' 第'+d.round+'拍</span>\n'+
+'            <span class="tag hot">'+d.handover+'</span>\n          </div>\n'+
+'          <h2>'+d.name+'</h2>\n'+
+'          <div class="addr">📍 '+d.address+'</div>\n'+
+'          <div class="price">底價 <b>'+d.priceDisplay+'</b> 萬</div>\n'+
+'        </div>\n      </a>\n';
+}
+
+document.getElementById('publishForm').addEventListener('submit',async function(e){
+  e.preventDefault();
+  var st=document.getElementById('pubStatus');
+  var btn=document.getElementById('publishBtn');
+  try{
+    getToken();
+    var code=document.getElementById('propCode').value.trim().toLowerCase();
+    if(!/^[a-z0-9-]+$/.test(code)) throw new Error('英文代號只能用小寫英文、數字、連字號');
+    var iso=document.getElementById('auctionDate').value;
+    var parts=iso.split('-');
+    var d={
+      code:code, iso:iso,
+      dateDisplay:parts[1]+'/'+parts[2],
+      name:document.getElementById('name').value.trim(),
+      address:document.getElementById('address').value.trim(),
+      court:document.getElementById('court').value.trim(),
+      round:document.getElementById('auctionRound').value,
+      price:document.getElementById('basePrice').value,
+      priceDisplay:Number(document.getElementById('basePrice').value).toLocaleString('en-US'),
+      deposit:document.getElementById('deposit').value,
+      layout:document.getElementById('layout').value.trim(),
+      area:document.getElementById('area').value.trim(),
+      handover:document.getElementById('handover').value,
+      traffic:document.getElementById('traffic').value.trim(),
+      facilities:document.getElementById('facilities').value.trim(),
+      schools:document.getElementById('schools').value.trim(),
+      mapUrl:document.getElementById('mapUrl').value.trim()
+    };
+    var imgFile=document.getElementById('image').files[0];
+    if(!imgFile) throw new Error('請上傳物件圖片');
+    var voiceF=document.getElementById('voiceFile').files[0];
+    d.hasVoice=!!voiceF;
+
+    btn.disabled=true;
+    st.className='status loading'; st.textContent='⏳ 檢查代號是否重複…';
+    var exist=await ghGet(code+'/index.html');
+    if(exist) throw new Error('代號「'+code+'」已存在，請換一個（或先到管理分頁下架）');
+
+    function fileB64(f){
+      return new Promise(function(res,rej){
+        var rd=new FileReader();
+        rd.onload=function(){res(rd.result.split(',')[1]);};
+        rd.onerror=rej;
+        rd.readAsDataURL(f);
+      });
+    }
+
+    st.textContent='⏳ (1/4) 上傳物件網頁…';
+    await ghPut(code+'/index.html', b64encode(buildPropertyPage(d)), '新增物件：'+d.name);
+
+    st.textContent='⏳ (2/4) 上傳圖片…';
+    await ghPut(code+'/'+code+'.jpg', await fileB64(imgFile), '新增圖片：'+d.name);
+
+    if(voiceF){
+      st.textContent='⏳ (3/4) 上傳語音檔…';
+      await ghPut(code+'/voice.mp3', await fileB64(voiceF), '新增語音：'+d.name);
+    }
+
+    st.textContent='⏳ (4/4) 更新總覽卡片…';
+    var idx=await ghGet('index.html');
+    if(!idx) throw new Error('讀不到總覽 index.html');
+    var html=b64decode(idx.content);
+    var MARK='      <!-- ▲ 物件卡片結束 ▲ -->';
+    if(html.indexOf(MARK)===-1) throw new Error('總覽找不到卡片插入標記');
+    html=html.replace(MARK, buildCard(d)+MARK);
+    await ghPut('index.html', b64encode(html), '總覽新增卡片：'+d.name, idx.sha);
+
+    st.className='status success';
+    st.innerHTML='✅ 發布成功！約 1～2 分鐘後生效。<br>物件頁：<a href="'+SITE+code+'/" target="_blank" style="color:inherit;text-decoration:underline">'+SITE+code+'/</a><br>總覽：<a href="'+SITE+'" target="_blank" style="color:inherit;text-decoration:underline">'+SITE+'</a>';
+  }catch(err){
+    st.className='status error';
+    st.textContent='❌ '+err.message;
+  }finally{
+    btn.disabled=false;
+  }
+});
+
+/* ========= 管理／下架 ========= */
+async function loadList(){
+  var st=document.getElementById('mgStatus');
+  var box=document.getElementById('propList');
+  try{
+    st.className='status loading'; st.textContent='⏳ 讀取總覽…';
+    var idx=await ghGet('index.html');
+    if(!idx) throw new Error('讀不到總覽 index.html');
+    var html=b64decode(idx.content);
+    var cards=html.match(/<a class="item"[\s\S]*?<\/a>/g)||[];
+    box.innerHTML='';
+    if(!cards.length){ box.innerHTML='<div class="hint">目前總覽沒有任何卡片。</div>'; st.className='status'; return; }
+    var now=new Date();
+    cards.forEach(function(c){
+      var code=(c.match(/href="([^/"]+)\//)||[])[1]||'?';
+      var auction=(c.match(/data-auction="([^"]*)"/)||[])[1]||'';
+      var title=((c.match(/<h2>([\s\S]*?)<\/h2>/)||[])[1]||code).replace(/<[^>]+>/g,'');
+      var expired=false;
+      if(auction){
+        var dd=new Date(auction+'T00:00:00+08:00'); dd.setDate(dd.getDate()+3);
+        expired=now>=dd;
+      }
+      var row=document.createElement('div');
+      row.className='prop-row';
+      row.innerHTML='<div class="prop-info"><div class="t">'+title+'</div><div class="m">代號 '+code+'　拍賣日 '+(auction||'未標')+'</div></div>'+
+        '<span class="pill '+(expired?'off':'on')+'">'+(expired?'已過期(自動隱藏)':'上架中')+'</span>'+
+        '<button type="button" class="action btn-danger">🔻 下架</button>';
+      row.querySelector('button').addEventListener('click',function(){ delist(code,title,this); });
+      box.appendChild(row);
+    });
+    st.className='status';
+  }catch(err){
+    st.className='status error'; st.textContent='❌ '+err.message;
+  }
+}
+document.getElementById('loadBtn').addEventListener('click',loadList);
+
+async function delist(code,title,btnEl){
+  var st=document.getElementById('mgStatus');
+  if(!confirm('確定要下架「'+title+'」？\n\n① 總覽卡片會移除\n② 物件頁會顯示「已到期下架」')) return;
+  try{
+    btnEl.disabled=true;
+    st.className='status loading'; st.textContent='⏳ (1/2) 從總覽移除卡片…';
+    var idx=await ghGet('index.html');
+    var html=b64decode(idx.content);
+    var re=new RegExp('[ \\t]*<a class="item" href="'+code+'\\/"[\\s\\S]*?<\\/a>\\s*\\n?');
+    if(!re.test(html)) throw new Error('總覽找不到「'+code+'」的卡片');
+    html=html.replace(re,'      ');
+    await ghPut('index.html', b64encode(html), '下架物件：'+title, idx.sha);
+
+    st.textContent='⏳ (2/2) 物件頁改為已下架…';
+    var page=await ghGet(code+'/index.html');
+    if(page){
+      var phtml=b64decode(page.content);
+      var p2=phtml.replace(/var AUCTION="\d{4}-\d{2}-\d{2}"/,'var AUCTION="2000-01-01"');
+      if(p2!==phtml){
+        await ghPut(code+'/index.html', b64encode(p2), '物件頁下架：'+title, page.sha);
+      }
+    }
+    st.className='status success';
+    st.textContent='✅ 「'+title+'」已下架！約 1～2 分鐘後生效。';
+    loadList();
+  }catch(err){
+    st.className='status error'; st.textContent='❌ '+err.message;
+    btnEl.disabled=false;
+  }
+}
+</script>
+</body>
+</html>
