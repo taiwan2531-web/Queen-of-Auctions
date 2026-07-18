@@ -151,12 +151,7 @@ button.action{padding:12px 24px;border:none;border-radius:8px;font-size:1rem;fon
           </div>
         </div>
         <div class="form-grid full">
-          <div class="img-upload">
-            <label>語音介紹 mp3（選填）</label>
-            <input type="file" id="voiceFile" accept="audio/mpeg,audio/mp3,.mp3">
-            <div class="img-upload-btn" onclick="document.getElementById('voiceFile').click()">🔊 點擊上傳語音檔（mp3）</div>
-            <div class="hint" id="voiceHint">附上後物件頁會有「聽介紹」按鈕，點頁面自動播放。可請 Claude 用法拍女王的聲音生成。</div>
-          </div>
+          <div class="info-box">🔊 物件頁會<b>自動內建語音介紹</b>（依表單資料自動生成講稿，進站即播）。之後可另外補上「法拍女王」克隆聲音檔 voice.mp3，頁面會自動改用真人聲音版。</div>
         </div>
       </div>
 
@@ -243,53 +238,68 @@ document.getElementById('image').addEventListener('change',function(e){
   }
 });
 
-/* 語音檔選取提示 */
-document.getElementById('voiceFile').addEventListener('change',function(e){
-  var f=e.target.files[0];
-  document.getElementById('voiceHint').textContent = f ? ('已選：'+f.name) : '附上後物件頁會有「聽介紹」按鈕，點頁面自動播放。可請 Claude 用法拍女王的聲音生成。';
-});
-
 /* ========= 發布 ========= */
 var VOICE_CSS =
 '.voice-fab{position:fixed;right:18px;bottom:18px;z-index:99;display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border:none;border-radius:999px;background:var(--accent);color:#fff;font-size:1rem;font-weight:800;letter-spacing:1px;box-shadow:0 8px 24px rgba(0,0,0,.28);cursor:pointer;font-family:inherit}\n'+
 '.voice-fab:not(.playing){animation:voicepulse 2s infinite}\n'+
 '@keyframes voicepulse{0%{box-shadow:0 0 0 0 rgba(230,60,60,.45)}70%{box-shadow:0 0 0 16px rgba(230,60,60,0)}100%{box-shadow:0 0 0 0 rgba(230,60,60,0)}}\n'+
 'html.expired .voice-fab{display:none}\n';
-var VOICE_HTML =
-'  <button class="voice-fab" id="voiceBtn" type="button" aria-label="播放物件語音介紹">🔊 <span id="voiceLabel">聽介紹</span></button>\n'+
+/* 自動講稿：依表單資料組出介紹文（瀏覽器語音朗讀用；補上 voice.mp3 後自動改用真人聲音） */
+function buildNarration(d){
+  var p=d.iso.split('-');
+  var dateSay=parseInt(p[1],10)+'月'+parseInt(p[2],10)+'號';
+  return '哈囉大家好，我是法拍女王陳慧瑜！今天為您介紹：'+d.name.replace(/[^一-鿿A-Za-z0-9０-９]/g,'')+
+    '，位於'+d.address.replace(/[^一-鿿A-Za-z0-9０-９號巷弄樓之]/g,'')+
+    '。格局'+d.layout+'，'+d.area+'。'+dateSay+'第'+d.round+'拍，底價'+d.price+'萬、保證金'+d.deposit+'萬，'+d.handover+
+    '。心動不如馬上行動，歡迎撥打電話，或加LINE找慧瑜。未得標免付費。法拍找慧瑜，你的問題，我的專業！';
+}
+function voiceBlock(d){
+  var narr=buildNarration(d).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  return '  <button class="voice-fab" id="voiceBtn" type="button" aria-label="播放物件語音介紹">🔊 <span id="voiceLabel">聽介紹</span></button>\n'+
 '  <audio id="narration" src="voice.mp3" preload="auto"></audio>\n'+
+'  <span id="narrText" hidden>'+narr+'</span>\n'+
 '<scr'+'ipt>\n(function(){\n'+
+'  if(document.documentElement.classList.contains("expired"))return;\n'+
 '  var au=document.getElementById("narration"),btn=document.getElementById("voiceBtn"),lb=document.getElementById("voiceLabel");\n'+
-'  function setUI(p){btn.classList.toggle("playing",p);lb.textContent=p?"⏹ 停止":"聽介紹";}\n'+
-'  function play(){\n'+
-'    au.play().then(function(){setUI(true);}).catch(function(e){\n'+
-'      console.log("Autoplay prevented:", e);\n'+
-'    });\n'+
+'  var TEXT=document.getElementById("narrText").textContent;\n'+
+'  var mp3ok=true; au.addEventListener("error",function(){mp3ok=false;});\n'+
+'  var playing=false;\n'+
+'  function setUI(p){playing=p;btn.classList.toggle("playing",p);lb.textContent=p?"⏹ 停止":"聽介紹";}\n'+
+'  function speak(){\n'+
+'    if(!("speechSynthesis" in window))return false;\n'+
+'    var u=new SpeechSynthesisUtterance(TEXT);u.lang="zh-TW";u.rate=1.05;\n'+
+'    u.onend=function(){setUI(false);};u.onerror=function(){setUI(false);};\n'+
+'    speechSynthesis.cancel();speechSynthesis.speak(u);setUI(true);return true;\n'+
+'  }\n'+
+'  function stopAll(){au.pause();au.currentTime=0;if("speechSynthesis" in window)speechSynthesis.cancel();setUI(false);}\n'+
+'  au.addEventListener("ended",function(){setUI(false);au.currentTime=0;});\n'+
+'  au.addEventListener("play",function(){setUI(true);});\n'+
+'  var started=false;\n'+
+'  var GES=["pointerdown","touchstart","touchend","click","keydown"];\n'+
+'  function cleanup(){GES.forEach(function(ev){document.removeEventListener(ev,onG,true)});}\n'+
+'  function attempt(fromGesture){\n'+
+'    if(started)return;\n'+
+'    if(mp3ok){\n'+
+'      var p=au.play();\n'+
+'      if(p&&p.then){p.then(function(){started=true;cleanup();}).catch(function(){\n'+
+'        if(!mp3ok&&fromGesture&&speak()){started=true;cleanup();}\n'+
+'      });}\n'+
+'    }else if(fromGesture&&speak()){started=true;cleanup();}\n'+
+'  }\n'+
+'  function onG(e){\n'+
+'    if(e.target&&e.target.closest&&(e.target.closest("#voiceBtn")||e.target.closest("a")))return;\n'+
+'    attempt(true);\n'+
 '  }\n'+
 '  btn.addEventListener("click",function(e){\n'+
-'    e.stopPropagation();\n'+
-'    if(au.paused){play();} else {au.pause();au.currentTime=0;setUI(false);}\n'+
+'    e.stopPropagation();started=true;cleanup();\n'+
+'    if(playing){stopAll();}\n'+
+'    else if(mp3ok){au.currentTime=0;au.play().catch(function(){speak();});}\n'+
+'    else{speak();}\n'+
 '  });\n'+
-'  au.addEventListener("ended",function(){setUI(false);au.currentTime=0;});\n'+
-'  \n'+
-'  play();\n'+
-'  \n'+
-'  var fired=false;\n'+
-'  function autoPlayOnGesture(e){\n'+
-'    if(fired)return;\n'+
-'    if(e.target.closest("#voiceBtn")||e.target.closest("a"))return;\n'+
-'    if(document.documentElement.classList.contains("expired"))return;\n'+
-'    fired=true;\n'+
-'    play();\n'+
-'    events.forEach(function(evt){\n'+
-'      document.removeEventListener(evt, autoPlayOnGesture, true);\n'+
-'    });\n'+
-'  }\n'+
-'  var events=["click","touchstart","touchend","mousedown","keydown","scroll"];\n'+
-'  events.forEach(function(evt){\n'+
-'    document.addEventListener(evt, autoPlayOnGesture, true);\n'+
-'  });\n'+
+'  attempt(false);\n'+
+'  GES.forEach(function(ev){document.addEventListener(ev,onG,true)});\n'+
 '})();\n</scr'+'ipt>\n';
+}
 function buildPropertyPage(d){
   var handoverTag = d.handover==='有點交' ? '<span class="ok">有點交</span>' : '<span class="hi">不點交</span>';
   var noteHandover = d.handover==='有點交' ? '有點交' : '不點交';
@@ -343,7 +353,7 @@ function buildPropertyPage(d){
 '.offline-card{max-width:640px;margin:0 auto;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);text-align:center;padding:48px 28px}\n'+
 '.offline-card .offline-emoji{font-size:3rem}\n.offline-card h1{font-size:1.6rem;font-weight:900;color:var(--brand-dark);margin-top:10px}\n'+
 '.offline-card p{margin-top:12px;color:var(--muted)}\n'+
-(d.hasVoice?VOICE_CSS:'')+
+VOICE_CSS+
 '</style>\n</head>\n<body>\n'+
 '  <div class="offline-notice">\n    <div class="offline-card">\n      <div class="offline-emoji">🔚</div>\n      <h1>本物件已到期下架</h1>\n      <p>本物件拍賣程序已結束，資訊已下架。<br>想了解更多法拍好物件，歡迎與我們聯繫！</p>\n    </div>\n  </div>\n'+
 '  <header class="hero">\n    <img class="hero-photo" src="'+d.code+'.jpg" alt="'+d.address+' '+d.name+'">\n'+
@@ -389,7 +399,7 @@ courtRow+
 '      <div class="slogan">專業代標｜負責點交｜代墊｜貸款</div>\n'+
 '      <div class="co">\n        一零四高欣仲介經紀有限公司｜統一編號 13197081<br>\n        不動產經紀人：鄭淑靜（96）高市字第0330號\n      </div>\n    </div>\n  </div>\n\n'+
 '  <footer>本頁面為物件資訊整理，法拍資訊以法院公告為準。智慧財產，抄襲必究。</footer>\n'+
-(d.hasVoice?VOICE_HTML:'')+
+voiceBlock(d)+
 '<scr'+'ipt>\n(function(){\n  var AUCTION="'+d.iso+'", GRACE=3; // 拍賣日 + 3 天後自動下架\n  var dd=new Date(AUCTION+"T00:00:00+08:00");\n  dd.setDate(dd.getDate()+GRACE);\n  if(new Date()>=dd){\n    document.documentElement.classList.add("expired");\n    document.title="物件已下架｜法拍找慧瑜";\n  }\n})();\n</scr'+'ipt>\n</body>\n</html>\n';
 }
 
@@ -435,8 +445,6 @@ document.getElementById('publishForm').addEventListener('submit',async function(
     };
     var imgFile=document.getElementById('image').files[0];
     if(!imgFile) throw new Error('請上傳物件圖片');
-    var voiceF=document.getElementById('voiceFile').files[0];
-    d.hasVoice=!!voiceF;
 
     btn.disabled=true;
     st.className='status loading'; st.textContent='⏳ 檢查代號是否重複…';
@@ -452,18 +460,13 @@ document.getElementById('publishForm').addEventListener('submit',async function(
       });
     }
 
-    st.textContent='⏳ (1/4) 上傳物件網頁…';
+    st.textContent='⏳ (1/3) 上傳物件網頁…';
     await ghPut(code+'/index.html', b64encode(buildPropertyPage(d)), '新增物件：'+d.name);
 
-    st.textContent='⏳ (2/4) 上傳圖片…';
+    st.textContent='⏳ (2/3) 上傳圖片…';
     await ghPut(code+'/'+code+'.jpg', await fileB64(imgFile), '新增圖片：'+d.name);
 
-    if(voiceF){
-      st.textContent='⏳ (3/4) 上傳語音檔…';
-      await ghPut(code+'/voice.mp3', await fileB64(voiceF), '新增語音：'+d.name);
-    }
-
-    st.textContent='⏳ (4/4) 更新總覽卡片…';
+    st.textContent='⏳ (3/3) 更新總覽卡片…';
     var idx=await ghGet('index.html');
     if(!idx) throw new Error('讀不到總覽 index.html');
     var html=b64decode(idx.content);
