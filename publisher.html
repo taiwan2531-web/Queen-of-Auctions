@@ -69,6 +69,7 @@ button.action{padding:12px 24px;border:none;border-radius:8px;font-size:1rem;fon
 <body>
 <div class="container">
   <div class="header">
+    <div style="letter-spacing:3px;font-size:1.05rem;font-weight:700;opacity:.95;margin-bottom:6px">👑 法拍女王 陳慧瑜</div>
     <h1>法拍物件網頁發布工具</h1>
     <p>發布新物件（自動加總覽卡片）｜管理員手動下架</p>
   </div>
@@ -357,7 +358,12 @@ VOICE_CSS+
 '</style>\n</head>\n<body>\n'+
 '  <div class="offline-notice">\n    <div class="offline-card">\n      <div class="offline-emoji">🔚</div>\n      <h1>本物件已到期下架</h1>\n      <p>本物件拍賣程序已結束，資訊已下架。<br>想了解更多法拍好物件，歡迎與我們聯繫！</p>\n    </div>\n  </div>\n'+
 '  <header class="hero">\n    <img class="hero-photo" src="'+d.code+'.jpg" alt="'+d.address+' '+d.name+'">\n'+
-'    <div class="hero-inner">\n      <div class="badge-row">\n'+
+'    <div class="hero-inner">\n'+
+'      <div class="btn-row" style="margin:0 0 22px">\n'+
+'        <a class="cbtn tel" href="tel:0917270656">📞 撥號 0917-270-656</a>\n'+
+'        <a class="cbtn line" href="https://line.me/ti/p/ViiJn43Z7l" target="_blank" rel="noopener">💬 加 LINE　a0917270656</a>\n'+
+'      </div>\n'+
+'      <div class="badge-row">\n'+
 '        <span class="badge">'+d.dateDisplay+' 第'+d.round+'拍</span>\n'+
 '        <span class="badge hot">'+d.handover+'</span>\n      </div>\n'+
 '      <h1>'+d.name+'</h1>\n      <div class="addr">📍 '+d.address+'</div>\n'+
