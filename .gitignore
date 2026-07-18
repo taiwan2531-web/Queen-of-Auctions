@@ -1,0 +1,23 @@
+# System files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editor files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Obsidian files
+.obsidian/workspace
+.obsidian/workspace.json
+obsidian/workspace
+obsidian/workspace.json
+
+# Temporary files
+temp_*
+*.log

@@ -240,11 +240,6 @@ document.getElementById('image').addEventListener('change',function(e){
 });
 
 /* ========= 發布 ========= */
-var VOICE_CSS =
-'.voice-fab{position:fixed;right:18px;bottom:18px;z-index:99;display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border:none;border-radius:999px;background:var(--accent);color:#fff;font-size:1rem;font-weight:800;letter-spacing:1px;box-shadow:0 8px 24px rgba(0,0,0,.28);cursor:pointer;font-family:inherit}\n'+
-'.voice-fab:not(.playing){animation:voicepulse 2s infinite}\n'+
-'@keyframes voicepulse{0%{box-shadow:0 0 0 0 rgba(230,60,60,.45)}70%{box-shadow:0 0 0 16px rgba(230,60,60,0)}100%{box-shadow:0 0 0 0 rgba(230,60,60,0)}}\n'+
-'html.expired .voice-fab{display:none}\n';
 /* 自動講稿：依表單資料組出介紹文（瀏覽器語音朗讀用；補上 voice.mp3 後自動改用真人聲音） */
 function buildNarration(d){
   var p=d.iso.split('-');
@@ -254,123 +249,152 @@ function buildNarration(d){
     '。格局'+d.layout+'，'+d.area+'。'+dateSay+'第'+d.round+'拍，底價'+d.price+'萬、保證金'+d.deposit+'萬，'+d.handover+
     '。心動不如馬上行動，歡迎撥打電話，或加LINE找慧瑜。未得標免付費。法拍找慧瑜，你的問題，我的專業！';
 }
-function voiceBlock(d){
-  var narr=buildNarration(d).replace(/&/g,'&amp;').replace(/</g,'&lt;');
-  return '  <button class="voice-fab" id="voiceBtn" type="button" aria-label="播放物件語音介紹">🔊 <span id="voiceLabel">聽介紹</span></button>
-'+
-'  <audio id="narration" src="voice.mp3" preload="auto"></audio>
-'+
-'  <span id="narrText" hidden>'+narr+'</span>
-'+
-'<scr'+'ipt>
-(function(){
-'+
-'  if(document.documentElement.classList.contains("expired"))return;
-'+
-'  var au=document.getElementById("narration"),btn=document.getElementById("voiceBtn"),lb=document.getElementById("voiceLabel");
-'+
-'  var TEXT=document.getElementById("narrText").textContent;
-'+
-'  var playing=false, useTTS=false;
-'+
-'  function setUI(p){playing=p;btn.classList.toggle("playing",p);lb.textContent=p?"⏹ 停止":"聽介紹";}
-'+
-'  function speak(){
-'+
-'    if(!("speechSynthesis" in window))return;
-'+
-'    speechSynthesis.cancel();
-'+
-'    var u=new SpeechSynthesisUtterance(TEXT);u.lang="zh-TW";u.rate=0.95;u.pitch=1.05;
-'+
-'    var vv=speechSynthesis.getVoices();
-'+
-'    var v=vv.find(function(v){return v.lang==="zh-TW"&&v.name.includes("Hsiao");})||vv.find(function(v){return v.lang==="zh-TW";});
-'+
-'    if(v)u.voice=v;
-'+
-'    u.onstart=function(){setUI(true);};u.onend=u.onerror=function(){setUI(false);};
-'+
-'    speechSynthesis.speak(u);
-'+
-'  }
-'+
-'  function playAudioOrTTS(){
-'+
-'    if(useTTS){
-'+
-'      speak();
-'+
-'    } else {
-'+
-'      au.play().then(function(){setUI(true);}).catch(function(){
-'+
-'        useTTS=true;
-'+
-'        speak();
-'+
-'      });
-'+
-'    }
-'+
-'  }
-'+
-'  function stopAll(){au.pause();au.currentTime=0;if("speechSynthesis" in window)speechSynthesis.cancel();setUI(false);}
-'+
-'  au.addEventListener("ended",function(){setUI(false);au.currentTime=0;});
-'+
-'  au.addEventListener("error",function(){useTTS=true;});
-'+
-'  btn.addEventListener("click",function(e){
-'+
-'    e.stopPropagation();
-'+
-'    if(playing){stopAll();}else{playAudioOrTTS();}
-'+
-'  });
-'+
-'  var started=false;
-'+
-'  var GES=["pointerdown","touchstart","touchend","click","keydown"];
-'+
-'  function cleanup(){GES.forEach(function(ev){document.removeEventListener(ev,onG,true)});}
-'+
-'  function attempt(){
-'+
-'    if(started)return;
-'+
-'    au.play().then(function(){
-'+
-'      started=true;setUI(true);cleanup();
-'+
-'    }).catch(function(){
-'+
-'      if("speechSynthesis" in window){
-'+
-'        speak();started=true;cleanup();
-'+
-'      }
-'+
-'    });
-'+
-'  }
-'+
-'  function onG(e){
-'+
-'    if(e.target&&e.target.closest&&(e.target.closest("#voiceBtn")||e.target.closest("a")))return;
-'+
-'    attempt();
-'+
-'  }
-'+
-'  setTimeout(function(){if(!playing)attempt();},800);
-'+
-'  GES.forEach(function(ev){document.addEventListener(ev,onG,true)});
-'+
-'})();
-</scr'+'ipt>
-';
+function getBase64(file) {
+  return new Promise((resolve, reject) => {
+    var reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = error => reject(error);
+  });
+}
+
+document.getElementById('publishForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  var pubBtn = document.getElementById('publishBtn');
+  var pubStatus = document.getElementById('pubStatus');
+  
+  try {
+    var token = getToken(); // 驗證 Token 存在
+    
+    var code = document.getElementById('propCode').value.trim().toLowerCase();
+    var name = document.getElementById('name').value.trim();
+    var address = document.getElementById('address').value.trim();
+    var court = document.getElementById('court').value.trim() || '法院/金服公司';
+    var auctionDate = document.getElementById('auctionDate').value;
+    var auctionRound = document.getElementById('auctionRound').value.trim();
+    var basePrice = document.getElementById('basePrice').value.trim();
+    var deposit = document.getElementById('deposit').value.trim();
+    var layout = document.getElementById('layout').value.trim();
+    var area = document.getElementById('area').value.trim();
+    var handover = document.getElementById('handover').value;
+    var traffic = document.getElementById('traffic').value.trim() || '無特別標示';
+    var facilities = document.getElementById('facilities').value.trim() || '無特別標示';
+    var schools = document.getElementById('schools').value.trim() || '無特別標示';
+    var mapUrl = document.getElementById('mapUrl').value.trim();
+    
+    if(!mapUrl) {
+      mapUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(address);
+    }
+    
+    var imgFile = document.getElementById('image').files[0];
+    if(!imgFile) throw new Error('請先選擇物件圖片');
+    
+    // 禁用按鈕與顯示狀態
+    pubBtn.disabled = true;
+    pubStatus.className = 'status loading';
+    pubStatus.textContent = '⏳ (1/5) 讀取圖片並轉檔中...';
+    
+    var ext = imgFile.name.split('.').pop().toLowerCase() || 'jpg';
+    var imgBase64 = await getBase64(imgFile);
+    
+    pubStatus.textContent = '⏳ (2/5) 讀取物件頁模板...';
+    var tempRes = await ghGet('template.html');
+    if(!tempRes) throw new Error('找不到 template.html 範本檔案，請先上架此檔案。');
+    var templateHtml = b64decode(tempRes.content);
+    
+    var shortDate = '';
+    if(auctionDate){
+      var parts = auctionDate.split('-');
+      shortDate = parseInt(parts[1],10) + '/' + parseInt(parts[2],10);
+    }
+    
+    var narrData = {
+      iso: auctionDate,
+      name: name,
+      address: address,
+      layout: layout,
+      area: area,
+      round: auctionRound,
+      price: basePrice,
+      deposit: deposit,
+      handover: handover
+    };
+    var narration = buildNarration(narrData);
+    
+    var pageHtml = templateHtml
+      .replace(/\{\{NAME\}\}/g, name)
+      .replace(/\{\{ADDRESS\}\}/g, address)
+      .replace(/\{\{PROP_CODE\}\}/g, code)
+      .replace(/\{\{IMG_EXT\}\}/g, ext)
+      .replace(/\{\{AUCTION_DATE\}\}/g, auctionDate)
+      .replace(/\{\{AUCTION_DATE_SHORT\}\}/g, shortDate)
+      .replace(/\{\{AUCTION_ROUND\}\}/g, auctionRound)
+      .replace(/\{\{HANDOVER\}\}/g, handover)
+      .replace(/\{\{HANDOVER_CLASS\}\}/g, handover === '有點交' ? 'ok' : 'hi')
+      .replace(/\{\{BASE_PRICE\}\}/g, Number(basePrice).toLocaleString())
+      .replace(/\{\{DEPOSIT\}\}/g, Number(deposit).toLocaleString())
+      .replace(/\{\{LAYOUT\}\}/g, layout)
+      .replace(/\{\{AREA\}\}/g, area)
+      .replace(/\{\{COURT\}\}/g, court)
+      .replace(/\{\{TRAFFIC\}\}/g, traffic)
+      .replace(/\{\{FACILITIES\}\}/g, facilities)
+      .replace(/\{\{SCHOOLS\}\}/g, schools)
+      .replace(/\{\{MAP_URL\}\}/g, mapUrl)
+      .replace(/\{\{NARRATION\}\}/g, narration);
+      
+    pubStatus.textContent = '⏳ (3/5) 上傳物件圖片...';
+    var existingImg = await ghGet(code + '/' + code + '.' + ext);
+    var imgSha = existingImg ? existingImg.sha : null;
+    await ghPut(code + '/' + code + '.' + ext, imgBase64, 'feat(' + code + '): 上傳物件圖片', imgSha);
+    
+    pubStatus.textContent = '⏳ (4/5) 建立物件網頁...';
+    var existingPage = await ghGet(code + '/index.html');
+    var pageSha = existingPage ? existingPage.sha : null;
+    await ghPut(code + '/index.html', b64encode(pageHtml), 'feat(' + code + '): 上傳物件網頁', pageSha);
+    
+    pubStatus.textContent = '⏳ (5/5) 將物件卡片更新至總覽...';
+    var idxRes = await ghGet('index.html');
+    if(!idxRes) throw new Error('無法讀取總覽 index.html');
+    var indexHtml = b64decode(idxRes.content);
+    
+    // 移除舊的相同代號卡片（若有）
+    var cardRegex = new RegExp('[ \\t]*<a class="item" href="' + code + '\\/"[\\s\\S]*?<\\/a>\\s*\\n?');
+    indexHtml = indexHtml.replace(cardRegex, '      ');
+    
+    var cardHtml = 
+      '      <a class="item" href="' + code + '/" data-auction="' + auctionDate + '">\n' +
+      '        <img src="' + code + '/' + code + '.' + ext + '" alt="' + name + '">\n' +
+      '        <div class="body">\n' +
+      '          <div class="tag-row">\n' +
+      '            <span class="tag">' + shortDate + ' 第' + auctionRound + '拍</span>\n' +
+      '            <span class="tag hot">' + handover + '</span>\n' +
+      '          </div>\n' +
+      '          <h2>' + name + '</h2>\n' +
+      '          <div class="addr">📍 ' + address + '</div>\n' +
+      '          <div class="price">底價 <b>' + Number(basePrice).toLocaleString() + '</b> 萬</div>\n' +
+      '        </div>\n' +
+      '      </a>\n';
+      
+    var insertMarker = '<!-- ▼ 物件卡片：每新增一筆物件，複製一個 .item ▼ -->';
+    var markerIdx = indexHtml.indexOf(insertMarker);
+    if(markerIdx === -1) throw new Error('index.html 找不到卡片插入標記');
+    
+    indexHtml = indexHtml.slice(0, markerIdx + insertMarker.length) + '\n' + cardHtml + indexHtml.slice(markerIdx + insertMarker.length);
+    await ghPut('index.html', b64encode(indexHtml), 'feat(' + code + '): 發布新物件卡片 ' + name, idxRes.sha);
+    
+    pubStatus.className = 'status success';
+    pubStatus.innerHTML = '🎉 成功發布物件！<br>🔗 物件網址：<a href="' + SITE + code + '/" target="_blank" style="color:var(--brand-dark);font-weight:bold">' + SITE + code + '/</a><br>🔊 本地語音克隆已自動排程，陳慧瑜克隆語音將於 1-2 分鐘內自動升級播放。';
+    
+    document.getElementById('publishForm').reset();
+    document.getElementById('preview').style.display = 'none';
+  } catch (err) {
+    pubStatus.className = 'status error';
+    pubStatus.textContent = '❌ 發布失敗：' + err.message;
+  } finally {
+    pubBtn.disabled = false;
+  }
 });
+
 
 /* ========= 管理／下架 ========= */
 async function loadList(){
