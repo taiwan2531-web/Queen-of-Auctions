@@ -256,240 +256,120 @@ function buildNarration(d){
 }
 function voiceBlock(d){
   var narr=buildNarration(d).replace(/&/g,'&amp;').replace(/</g,'&lt;');
-  return '  <button class="voice-fab" id="voiceBtn" type="button" aria-label="播放物件語音介紹">🔊 <span id="voiceLabel">聽介紹</span></button>\n'+
-'  <audio id="narration" src="voice.mp3" preload="auto"></audio>\n'+
-'  <span id="narrText" hidden>'+narr+'</span>\n'+
-'<scr'+'ipt>\n(function(){\n'+
-'  if(document.documentElement.classList.contains("expired"))return;\n'+
-'  var au=document.getElementById("narration"),btn=document.getElementById("voiceBtn"),lb=document.getElementById("voiceLabel");\n'+
-'  var TEXT=document.getElementById("narrText").textContent;\n'+
-'  var mp3ok=true; au.addEventListener("error",function(){mp3ok=false;});\n'+
-'  var playing=false;\n'+
-'  function setUI(p){playing=p;btn.classList.toggle("playing",p);lb.textContent=p?"⏹ 停止":"聽介紹";}\n'+
-'  function speak(){\n'+
-'    if(!("speechSynthesis" in window))return false;\n'+
-'    var u=new SpeechSynthesisUtterance(TEXT);u.lang="zh-TW";u.rate=1.05;\n'+
-'    u.onend=function(){setUI(false);};u.onerror=function(){setUI(false);};\n'+
-'    speechSynthesis.cancel();speechSynthesis.speak(u);setUI(true);return true;\n'+
-'  }\n'+
-'  function stopAll(){au.pause();au.currentTime=0;if("speechSynthesis" in window)speechSynthesis.cancel();setUI(false);}\n'+
-'  au.addEventListener("ended",function(){setUI(false);au.currentTime=0;});\n'+
-'  au.addEventListener("play",function(){setUI(true);});\n'+
-'  var started=false;\n'+
-'  var GES=["pointerdown","touchstart","touchend","click","keydown"];\n'+
-'  function cleanup(){GES.forEach(function(ev){document.removeEventListener(ev,onG,true)});}\n'+
-'  function attempt(fromGesture){\n'+
-'    if(started)return;\n'+
-'    if(mp3ok){\n'+
-'      var p=au.play();\n'+
-'      if(p&&p.then){p.then(function(){started=true;cleanup();}).catch(function(){\n'+
-'        if(!mp3ok&&fromGesture&&speak()){started=true;cleanup();}\n'+
-'      });}\n'+
-'    }else if(fromGesture&&speak()){started=true;cleanup();}\n'+
-'  }\n'+
-'  function onG(e){\n'+
-'    if(e.target&&e.target.closest&&(e.target.closest("#voiceBtn")||e.target.closest("a")))return;\n'+
-'    attempt(true);\n'+
-'  }\n'+
-'  btn.addEventListener("click",function(e){\n'+
-'    e.stopPropagation();started=true;cleanup();\n'+
-'    if(playing){stopAll();}\n'+
-'    else if(mp3ok){au.currentTime=0;au.play().catch(function(){speak();});}\n'+
-'    else{speak();}\n'+
-'  });\n'+
-'  attempt(false);\n'+
-'  GES.forEach(function(ev){document.addEventListener(ev,onG,true)});\n'+
-'})();\n</scr'+'ipt>\n';
-}
-function buildPropertyPage(d){
-  var handoverTag = d.handover==='有點交' ? '<span class="ok">有點交</span>' : '<span class="hi">不點交</span>';
-  var noteHandover = d.handover==='有點交' ? '有點交' : '不點交';
-  var courtRow = d.court ? '<tr><th>拍賣單位</th><td>'+d.court+'</td></tr>' : '';
-  var mapLink = d.mapUrl ? '<a href="'+d.mapUrl+'" target="_blank" rel="noopener">📌 Google 地圖位置</a>' : '';
-  return '<!DOCTYPE html>\n<html lang="zh-Hant-TW">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>'+d.name+' — '+d.address+' 法拍物件</title>\n<style>\n'+
-':root{--brand:#1a4fa0;--brand-dark:#12376f;--accent:#e63c3c;--ink:#1c2634;--muted:#64708b;--line:#e4e9f2;--bg:#f4f6fb;--card:#fff;--radius:16px;--shadow:0 10px 30px rgba(18,55,111,.10)}\n'+
-'*{box-sizing:border-box;margin:0;padding:0}\nhtml{scroll-behavior:smooth}\n'+
-'body{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.7;-webkit-font-smoothing:antialiased}\n'+
-'.wrap{max-width:1000px;margin:0 auto;padding:0 20px}\n'+
-'.hero{background:var(--brand-dark)}\n.hero-photo-wrap{position:relative;max-width:1000px;margin:0 auto}\n.hero-photo{display:block;width:100%;max-width:1000px;margin:0 auto;height:auto}\n'+
-'.back-fab{position:absolute;right:12px;bottom:12px;display:inline-flex;align-items:center;gap:6px;background:rgba(18,55,111,.85);color:#fff;text-decoration:none;font-weight:800;font-size:.95rem;padding:9px 16px;border-radius:999px;border:1px solid rgba(255,255,255,.45)}\n.back-fab:hover,.back-fab:focus-visible{background:var(--brand)}\n'+
-'.hero-inner{padding:30px 20px 60px;max-width:1000px;margin:0 auto;text-align:center;background:linear-gradient(120deg,var(--brand),var(--brand-dark));color:#fff}\n'+
-'.badge-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}\n'+
-'.badge{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);padding:6px 14px;border-radius:999px;font-size:.9rem;font-weight:600;letter-spacing:.5px}\n'+
-'.badge.hot{background:var(--accent);border-color:var(--accent)}\n'+
-'.hero-inner h1{font-size:clamp(1.6rem,5vw,2.6rem);font-weight:800;letter-spacing:1px;line-height:1.35;text-wrap:balance}\n'+
-'.hero-inner .addr{margin-top:12px;font-size:clamp(1rem,2.6vw,1.2rem);opacity:.95}\n'+
-'.price-tag{display:inline-flex;align-items:baseline;gap:8px;margin-top:26px;background:#fff;color:var(--brand-dark);padding:14px 30px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.18)}\n'+
-'.price-tag .label{font-size:1rem;font-weight:600;color:var(--muted)}\n'+
-'.price-tag .num{font-size:clamp(2rem,7vw,2.8rem);font-weight:900;color:var(--accent)}\n'+
-'.price-tag .unit{font-size:1.1rem;font-weight:700}\n'+
-'.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:-34px;position:relative;z-index:2}\n'+
-'.fact{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 12px;text-align:center}\n'+
-'.fact .k{font-size:.82rem;color:var(--muted)}\n'+
-'.fact .v{font-size:clamp(1.05rem,3.4vw,1.35rem);font-weight:800;color:var(--brand);margin-top:4px}\n'+
-'section{padding:40px 0 8px}\n'+
-'.sec-title{font-size:1.3rem;font-weight:800;color:var(--brand);display:flex;align-items:center;gap:10px;margin-bottom:18px}\n'+
-'.sec-title::before{content:"";width:6px;height:22px;border-radius:3px;background:var(--brand)}\n'+
-'.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:6px 24px;overflow:hidden}\n'+
-'table{width:100%;border-collapse:collapse}\nth,td{text-align:left;padding:14px 6px;border-bottom:1px solid var(--line);font-size:1rem}\n'+
-'tr:last-child th,tr:last-child td{border-bottom:none}\nth{width:38%;color:var(--muted);font-weight:600}\ntd{font-weight:700;color:var(--ink)}\n'+
-'td .hi{color:var(--accent)}\ntd .ok{color:#0e9f6e}\n'+
-'.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}\n'+
-'.amen{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--line);align-items:flex-start}\n.amen:last-child{border-bottom:none}\n'+
-'.amen .ico{flex:none;width:42px;height:42px;border-radius:12px;background:#eef3fb;color:var(--brand);display:grid;place-items:center;font-size:1.3rem}\n'+
-'.amen .t{font-size:.85rem;color:var(--muted)}\n.amen .d{font-weight:700}\n'+
-'.note-box{background:#fff8f0;border:1px solid #f6d9b8;border-radius:var(--radius);padding:18px 22px 18px 40px;color:#8a5a20;font-size:.95rem}\n.note-box li{margin:4px 0}\n'+
-'.links{display:flex;flex-wrap:wrap;gap:12px}\n'+
-'.links a{text-decoration:none;color:var(--brand);font-weight:700;font-size:.95rem;background:#eef3fb;padding:10px 16px;border-radius:999px;border:1px solid #dbe6f7;transition:.2s}\n'+
-'.links a:hover,.links a:focus-visible{background:var(--brand);color:#fff}\n'+
-'.contact{margin-top:36px;background:linear-gradient(120deg,var(--brand),var(--brand-dark));color:#fff;border-radius:var(--radius);padding:30px 24px;text-align:center}\n'+
-'.contact .eyebrow{font-size:.95rem;opacity:.9;letter-spacing:2px}\n.contact .who{font-size:1.6rem;font-weight:900;letter-spacing:2px;margin-top:2px}\n'+
-'.btn-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:16px}\n'+
-'.cbtn{display:inline-flex;align-items:center;gap:10px;padding:12px 26px;border-radius:999px;font-size:1.2rem;font-weight:800;text-decoration:none;letter-spacing:1px;color:#fff}\n'+
-'.cbtn.line{background:#06c755}\n.cbtn.tel{background:#fff;color:var(--brand-dark)}\n.cbtn:focus-visible{outline:3px solid #fff;outline-offset:2px}\n'+
-'.contact .co{margin-top:18px;font-size:.88rem;opacity:.9;line-height:1.9}\n.contact .slogan{margin-top:12px;font-weight:700;letter-spacing:1px}\n'+
-'footer{text-align:center;color:var(--muted);font-size:.82rem;padding:26px 20px 40px}\n'+
-'@media (max-width:640px){.facts{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}th{width:42%}}\n'+
-'.offline-notice{display:none;padding:60px 20px 20px}\nhtml.expired .offline-notice{display:block}\n'+
-'html.expired .hero,html.expired .wrap .facts,html.expired .wrap section,html.expired footer{display:none}\n'+
-'.offline-card{max-width:640px;margin:0 auto;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);text-align:center;padding:48px 28px}\n'+
-'.offline-card .offline-emoji{font-size:3rem}\n.offline-card h1{font-size:1.6rem;font-weight:900;color:var(--brand-dark);margin-top:10px}\n'+
-'.offline-card p{margin-top:12px;color:var(--muted)}\n'+
-VOICE_CSS+
-'</style>\n</head>\n<body>\n'+
-'  <div class="offline-notice">\n    <div class="offline-card">\n      <div class="offline-emoji">🔚</div>\n      <h1>本物件已到期下架</h1>\n      <p>本物件拍賣程序已結束，資訊已下架。<br>想了解更多法拍好物件，歡迎與我們聯繫！</p>\n    </div>\n  </div>\n'+
-'  <header class="hero">\n    <div class="hero-photo-wrap">\n      <img class="hero-photo" src="'+d.code+'.jpg" alt="'+d.address+' '+d.name+'">\n      <a class="back-fab" href="../">🏠 返回總覽</a>\n    </div>\n'+
-'    <div class="hero-inner">\n'+
-'      <div class="btn-row" style="margin:0 0 22px">\n'+
-'        <a class="cbtn tel" href="tel:0917270656">📞 撥號 0917-270-656</a>\n'+
-'        <a class="cbtn line" href="https://line.me/ti/p/ViiJn43Z7l" target="_blank" rel="noopener">💬 加 LINE　a0917270656</a>\n'+
-'      </div>\n'+
-'      <div class="badge-row">\n'+
-'        <span class="badge">'+d.dateDisplay+' 第'+d.round+'拍</span>\n'+
-'        <span class="badge hot">'+d.handover+'</span>\n      </div>\n'+
-'      <h1>'+d.name+'</h1>\n      <div class="addr">📍 '+d.address+'</div>\n'+
-'      <div class="price-tag">\n        <span class="label">底價</span>\n        <span class="num">'+d.priceDisplay+'</span>\n        <span class="unit">萬</span>\n      </div>\n    </div>\n  </header>\n\n'+
-'  <div class="wrap">\n    <div class="facts">\n'+
-'      <div class="fact"><div class="k">格局</div><div class="v">'+d.layout+'</div></div>\n'+
-'      <div class="fact"><div class="k">坪數</div><div class="v">'+d.area+'</div></div>\n'+
-'      <div class="fact"><div class="k">拍賣日</div><div class="v">'+d.dateDisplay+'</div></div>\n'+
-'      <div class="fact"><div class="k">點交</div><div class="v">'+d.handover+'</div></div>\n    </div>\n\n'+
-'    <section>\n      <h2 class="sec-title">拍賣資訊</h2>\n      <div class="card">\n        <table>\n'+
-courtRow+
-'          <tr><th>拍賣日期</th><td>'+d.dateDisplay+'</td></tr>\n'+
-'          <tr><th>拍別</th><td>第 '+d.round+' 拍</td></tr>\n'+
-'          <tr><th>點交狀態</th><td>'+handoverTag+'</td></tr>\n'+
-'          <tr><th>底價</th><td><span class="hi">'+d.priceDisplay+' 萬</span></td></tr>\n'+
-'          <tr><th>保證金</th><td>'+d.deposit+' 萬</td></tr>\n        </table>\n      </div>\n    </section>\n\n'+
-'    <section>\n      <h2 class="sec-title">物件資料</h2>\n      <div class="card">\n        <table>\n'+
-'          <tr><th>地址</th><td>'+d.address+'</td></tr>\n'+
-'          <tr><th>房屋格局</th><td>'+d.layout+'</td></tr>\n'+
-'          <tr><th>坪數</th><td>'+d.area+'</td></tr>\n        </table>\n      </div>\n    </section>\n\n'+
-'    <section>\n      <h2 class="sec-title">生活與交通機能</h2>\n      <div class="grid2">\n        <div class="card">\n'+
-'          <div class="amen"><div class="ico">🚗</div><div><div class="t">交通</div><div class="d">'+(d.traffic||'待更新')+'</div></div></div>\n'+
-'          <div class="amen"><div class="ico">🛒</div><div><div class="t">購物</div><div class="d">'+(d.facilities||'待更新')+'</div></div></div>\n'+
-'        </div>\n        <div class="card">\n'+
-'          <div class="amen"><div class="ico">🏫</div><div><div class="t">學校</div><div class="d">'+(d.schools||'待更新')+'</div></div></div>\n'+
-'          <div class="amen"><div class="ico">🏠</div><div><div class="t">特色</div><div class="d">'+d.name+'</div></div></div>\n'+
-'        </div>\n      </div>\n    </section>\n\n'+
-'    <section>\n      <h2 class="sec-title">相關連結</h2>\n      <div class="links">\n        '+mapLink+'\n'+
-'        <a href="https://reurl.cc/OQ72Mg" target="_blank" rel="noopener">🏠 屋主急售好物件（選縣市）</a>\n'+
-'        <a href="https://reurl.cc/qVm9Kg" target="_blank" rel="noopener">🔎 法拍知識小學堂</a>\n      </div>\n    </section>\n\n'+
-'    <section>\n      <h2 class="sec-title">注意事項</h2>\n      <div class="note-box">\n        <ul>\n'+
-'          <li>法拍資訊一切以<strong>法院公告</strong>為準。</li>\n'+
-'          <li>本物件為<strong>'+noteHandover+'</strong>。</li>\n'+
-'          <li>無法看屋內、有日期限制。</li>\n'+
-'          <li>未得標免付費。</li>\n        </ul>\n      </div>\n    </section>\n\n'+
-'    <div class="contact">\n      <div class="eyebrow">你的問題・我的專業</div>\n      <div class="who">總經理 陳慧瑜</div>\n'+
-'      <div class="btn-row">\n        <a class="cbtn tel" href="tel:0917270656">📞 撥號 0917-270-656</a>\n'+
-'        <a class="cbtn line" href="https://line.me/ti/p/ViiJn43Z7l" target="_blank" rel="noopener">💬 加 LINE　a0917270656</a>\n      </div>\n'+
-'      <div class="slogan">專業代標｜負責點交｜代墊｜貸款</div>\n'+
-'      <div class="co">\n        一零四高欣仲介經紀有限公司｜統一編號 13197081<br>\n        不動產經紀人：鄭淑靜（96）高市字第0330號\n      </div>\n    </div>\n  </div>\n\n'+
-'  <footer>本頁面為物件資訊整理，法拍資訊以法院公告為準。智慧財產，抄襲必究。</footer>\n'+
-voiceBlock(d)+
-'<scr'+'ipt>\n(function(){\n  var AUCTION="'+d.iso+'", GRACE=3; // 拍賣日 + 3 天後自動下架\n  var dd=new Date(AUCTION+"T00:00:00+08:00");\n  dd.setDate(dd.getDate()+GRACE);\n  if(new Date()>=dd){\n    document.documentElement.classList.add("expired");\n    document.title="物件已下架｜法拍找慧瑜";\n  }\n})();\n</scr'+'ipt>\n</body>\n</html>\n';
-}
-
-function buildCard(d){
-  return '      <a class="item" href="'+d.code+'/" data-auction="'+d.iso+'">\n'+
-'        <img src="'+d.code+'/'+d.code+'.jpg" alt="'+d.address+' '+d.name+'">\n'+
-'        <div class="body">\n          <div class="tag-row">\n'+
-'            <span class="tag">'+d.dateDisplay+' 第'+d.round+'拍</span>\n'+
-'            <span class="tag hot">'+d.handover+'</span>\n          </div>\n'+
-'          <h2>'+d.name+'</h2>\n'+
-'          <div class="addr">📍 '+d.address+'</div>\n'+
-'          <div class="price">底價 <b>'+d.priceDisplay+'</b> 萬</div>\n'+
-'        </div>\n      </a>\n';
-}
-
-document.getElementById('publishForm').addEventListener('submit',async function(e){
-  e.preventDefault();
-  var st=document.getElementById('pubStatus');
-  var btn=document.getElementById('publishBtn');
-  try{
-    getToken();
-    var code=document.getElementById('propCode').value.trim().toLowerCase();
-    if(!/^[a-z0-9-]+$/.test(code)) throw new Error('英文代號只能用小寫英文、數字、連字號');
-    var iso=document.getElementById('auctionDate').value;
-    var parts=iso.split('-');
-    var d={
-      code:code, iso:iso,
-      dateDisplay:parts[1]+'/'+parts[2],
-      name:document.getElementById('name').value.trim(),
-      address:document.getElementById('address').value.trim(),
-      court:document.getElementById('court').value.trim(),
-      round:document.getElementById('auctionRound').value,
-      price:document.getElementById('basePrice').value,
-      priceDisplay:Number(document.getElementById('basePrice').value).toLocaleString('en-US'),
-      deposit:document.getElementById('deposit').value,
-      layout:document.getElementById('layout').value.trim(),
-      area:document.getElementById('area').value.trim(),
-      handover:document.getElementById('handover').value,
-      traffic:document.getElementById('traffic').value.trim(),
-      facilities:document.getElementById('facilities').value.trim(),
-      schools:document.getElementById('schools').value.trim(),
-      mapUrl:document.getElementById('mapUrl').value.trim()
-    };
-    var imgFile=document.getElementById('image').files[0];
-    if(!imgFile) throw new Error('請上傳物件圖片');
-
-    btn.disabled=true;
-    st.className='status loading'; st.textContent='⏳ 檢查代號是否重複…';
-    var exist=await ghGet(code+'/index.html');
-    if(exist) throw new Error('代號「'+code+'」已存在，請換一個（或先到管理分頁下架）');
-
-    function fileB64(f){
-      return new Promise(function(res,rej){
-        var rd=new FileReader();
-        rd.onload=function(){res(rd.result.split(',')[1]);};
-        rd.onerror=rej;
-        rd.readAsDataURL(f);
-      });
-    }
-
-    st.textContent='⏳ (1/3) 上傳物件網頁…';
-    await ghPut(code+'/index.html', b64encode(buildPropertyPage(d)), '新增物件：'+d.name);
-
-    st.textContent='⏳ (2/3) 上傳圖片…';
-    await ghPut(code+'/'+code+'.jpg', await fileB64(imgFile), '新增圖片：'+d.name);
-
-    st.textContent='⏳ (3/3) 更新總覽卡片…';
-    var idx=await ghGet('index.html');
-    if(!idx) throw new Error('讀不到總覽 index.html');
-    var html=b64decode(idx.content);
-    var MARK='      <!-- ▲ 物件卡片結束 ▲ -->';
-    if(html.indexOf(MARK)===-1) throw new Error('總覽找不到卡片插入標記');
-    html=html.replace(MARK, buildCard(d)+MARK);
-    await ghPut('index.html', b64encode(html), '總覽新增卡片：'+d.name, idx.sha);
-
-    st.className='status success';
-    st.innerHTML='✅ 發布成功！約 1～2 分鐘後生效。<br>物件頁：<a href="'+SITE+code+'/" target="_blank" style="color:inherit;text-decoration:underline">'+SITE+code+'/</a><br>總覽：<a href="'+SITE+'" target="_blank" style="color:inherit;text-decoration:underline">'+SITE+'</a>';
-  }catch(err){
-    st.className='status error';
-    st.textContent='❌ '+err.message;
-  }finally{
-    btn.disabled=false;
-  }
+  return '  <button class="voice-fab" id="voiceBtn" type="button" aria-label="播放物件語音介紹">🔊 <span id="voiceLabel">聽介紹</span></button>
+'+
+'  <audio id="narration" src="voice.mp3" preload="auto"></audio>
+'+
+'  <span id="narrText" hidden>'+narr+'</span>
+'+
+'<scr'+'ipt>
+(function(){
+'+
+'  if(document.documentElement.classList.contains("expired"))return;
+'+
+'  var au=document.getElementById("narration"),btn=document.getElementById("voiceBtn"),lb=document.getElementById("voiceLabel");
+'+
+'  var TEXT=document.getElementById("narrText").textContent;
+'+
+'  var playing=false, useTTS=false;
+'+
+'  function setUI(p){playing=p;btn.classList.toggle("playing",p);lb.textContent=p?"⏹ 停止":"聽介紹";}
+'+
+'  function speak(){
+'+
+'    if(!("speechSynthesis" in window))return;
+'+
+'    speechSynthesis.cancel();
+'+
+'    var u=new SpeechSynthesisUtterance(TEXT);u.lang="zh-TW";u.rate=0.95;u.pitch=1.05;
+'+
+'    var vv=speechSynthesis.getVoices();
+'+
+'    var v=vv.find(function(v){return v.lang==="zh-TW"&&v.name.includes("Hsiao");})||vv.find(function(v){return v.lang==="zh-TW";});
+'+
+'    if(v)u.voice=v;
+'+
+'    u.onstart=function(){setUI(true);};u.onend=u.onerror=function(){setUI(false);};
+'+
+'    speechSynthesis.speak(u);
+'+
+'  }
+'+
+'  function playAudioOrTTS(){
+'+
+'    if(useTTS){
+'+
+'      speak();
+'+
+'    } else {
+'+
+'      au.play().then(function(){setUI(true);}).catch(function(){
+'+
+'        useTTS=true;
+'+
+'        speak();
+'+
+'      });
+'+
+'    }
+'+
+'  }
+'+
+'  function stopAll(){au.pause();au.currentTime=0;if("speechSynthesis" in window)speechSynthesis.cancel();setUI(false);}
+'+
+'  au.addEventListener("ended",function(){setUI(false);au.currentTime=0;});
+'+
+'  au.addEventListener("error",function(){useTTS=true;});
+'+
+'  btn.addEventListener("click",function(e){
+'+
+'    e.stopPropagation();
+'+
+'    if(playing){stopAll();}else{playAudioOrTTS();}
+'+
+'  });
+'+
+'  var started=false;
+'+
+'  var GES=["pointerdown","touchstart","touchend","click","keydown"];
+'+
+'  function cleanup(){GES.forEach(function(ev){document.removeEventListener(ev,onG,true)});}
+'+
+'  function attempt(){
+'+
+'    if(started)return;
+'+
+'    au.play().then(function(){
+'+
+'      started=true;setUI(true);cleanup();
+'+
+'    }).catch(function(){
+'+
+'      if("speechSynthesis" in window){
+'+
+'        speak();started=true;cleanup();
+'+
+'      }
+'+
+'    });
+'+
+'  }
+'+
+'  function onG(e){
+'+
+'    if(e.target&&e.target.closest&&(e.target.closest("#voiceBtn")||e.target.closest("a")))return;
+'+
+'    attempt();
+'+
+'  }
+'+
+'  setTimeout(function(){if(!playing)attempt();},800);
+'+
+'  GES.forEach(function(ev){document.addEventListener(ev,onG,true)});
+'+
+'})();
+</scr'+'ipt>
+';
 });
 
 /* ========= 管理／下架 ========= */

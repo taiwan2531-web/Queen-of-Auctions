@@ -192,6 +192,7 @@ html.expired .voice-fab{display:none}
 
   <footer>本頁面為物件資訊整理，法拍資訊以法院公告為準。智慧財產，抄襲必究。</footer>
   <button class="voice-fab" id="voiceBtn" type="button" aria-label="播放物件語音介紹">🔊 <span id="voiceLabel">聽介紹</span></button>
+  <button class="voice-fab" id="voiceBtn" type="button" aria-label="播放物件語音介紹">🔊 <span id="voiceLabel">聽介紹</span></button>
   <audio id="narration" src="voice.mp3" preload="auto"></audio>
   <span id="narrText" hidden>哈囉大家好，我是法拍女王陳慧瑜！今天為您介紹：武廟商圈道明高中精華地段臨路店住百坪5層透天，位於高雄市苓雅區武廟路1592號。格局3房2廳4衛，建坪108坪/地坪18坪。8月11號第2拍，底價4001萬、保證金801萬，不點交。心動不如馬上行動，歡迎撥打電話，或加LINE找慧瑜。未得標免付費。法拍找慧瑜，你的問題，我的專業！</span>
 <script>
@@ -199,41 +200,53 @@ html.expired .voice-fab{display:none}
   if(document.documentElement.classList.contains("expired"))return;
   var au=document.getElementById("narration"),btn=document.getElementById("voiceBtn"),lb=document.getElementById("voiceLabel");
   var TEXT=document.getElementById("narrText").textContent;
-  var mp3ok=true; au.addEventListener("error",function(){mp3ok=false;});
-  var playing=false;
+  var playing=false, useTTS=false;
   function setUI(p){playing=p;btn.classList.toggle("playing",p);lb.textContent=p?"⏹ 停止":"聽介紹";}
   function speak(){
-    if(!("speechSynthesis" in window))return false;
-    var u=new SpeechSynthesisUtterance(TEXT);u.lang="zh-TW";u.rate=1.05;
-    u.onend=function(){setUI(false);};u.onerror=function(){setUI(false);};
-    speechSynthesis.cancel();speechSynthesis.speak(u);setUI(true);return true;
+    if(!("speechSynthesis" in window))return;
+    speechSynthesis.cancel();
+    var u=new SpeechSynthesisUtterance(TEXT);u.lang="zh-TW";u.rate=0.95;u.pitch=1.05;
+    var vv=speechSynthesis.getVoices();
+    var v=vv.find(function(v){return v.lang==="zh-TW"&&v.name.includes("Hsiao");})||vv.find(function(v){return v.lang==="zh-TW";});
+    if(v)u.voice=v;
+    u.onstart=function(){setUI(true);};u.onend=u.onerror=function(){setUI(false);};
+    speechSynthesis.speak(u);
+  }
+  function playAudioOrTTS(){
+    if(useTTS){
+      speak();
+    } else {
+      au.play().then(function(){setUI(true);}).catch(function(){
+        useTTS=true;
+        speak();
+      });
+    }
   }
   function stopAll(){au.pause();au.currentTime=0;if("speechSynthesis" in window)speechSynthesis.cancel();setUI(false);}
   au.addEventListener("ended",function(){setUI(false);au.currentTime=0;});
-  au.addEventListener("play",function(){setUI(true);});
+  au.addEventListener("error",function(){useTTS=true;});
+  btn.addEventListener("click",function(e){
+    e.stopPropagation();
+    if(playing){stopAll();}else{playAudioOrTTS();}
+  });
   var started=false;
   var GES=["pointerdown","touchstart","touchend","click","keydown"];
   function cleanup(){GES.forEach(function(ev){document.removeEventListener(ev,onG,true)});}
-  function attempt(fromGesture){
+  function attempt(){
     if(started)return;
-    if(mp3ok){
-      var p=au.play();
-      if(p&&p.then){p.then(function(){started=true;cleanup();}).catch(function(){
-        if(!mp3ok&&fromGesture&&speak()){started=true;cleanup();}
-      });}
-    }else if(fromGesture&&speak()){started=true;cleanup();}
+    au.play().then(function(){
+      started=true;setUI(true);cleanup();
+    }).catch(function(){
+      if("speechSynthesis" in window){
+        speak();started=true;cleanup();
+      }
+    });
   }
   function onG(e){
     if(e.target&&e.target.closest&&(e.target.closest("#voiceBtn")||e.target.closest("a")))return;
-    attempt(true);
+    attempt();
   }
-  btn.addEventListener("click",function(e){
-    e.stopPropagation();started=true;cleanup();
-    if(playing){stopAll();}
-    else if(mp3ok){au.currentTime=0;au.play().catch(function(){speak();});}
-    else{speak();}
-  });
-  attempt(false);
+  setTimeout(function(){if(!playing)attempt();},800);
   GES.forEach(function(ev){document.addEventListener(ev,onG,true)});
 })();
 </script>
