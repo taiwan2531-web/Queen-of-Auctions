@@ -67,6 +67,16 @@ html.expired .hero,html.expired .wrap .facts,html.expired .wrap section,html.exp
 .offline-card .offline-emoji{font-size:3rem}
 .offline-card h1{font-size:1.6rem;font-weight:900;color:var(--brand-dark);margin-top:10px}
 .offline-card p{margin-top:12px;color:var(--muted)}
+.voice-fab{position:fixed;right:18px;bottom:18px;z-index:50;display:flex;align-items:center;gap:10px;background:var(--brand);color:#fff;border:none;border-radius:999px;padding:12px 20px;font-size:1rem;font-weight:800;font-family:inherit;letter-spacing:1px;box-shadow:0 8px 24px rgba(18,55,111,.35);cursor:pointer;transition:.2s}
+.voice-fab:hover{background:var(--brand-dark)}
+.voice-fab .eq{display:inline-flex;gap:2px;align-items:flex-end;height:16px}
+.voice-fab .eq span{width:3px;background:#fff;border-radius:2px;height:6px}
+.voice-fab.playing .eq span{animation:eq .8s ease-in-out infinite}
+.voice-fab.playing .eq span:nth-child(2){animation-delay:.2s}
+.voice-fab.playing .eq span:nth-child(3){animation-delay:.4s}
+@keyframes eq{0%,100%{height:5px}50%{height:16px}}
+@media (prefers-reduced-motion:reduce){.voice-fab.playing .eq span{animation:none}}
+html.expired .voice-fab{display:none}
 </style>
 </head>
 <body>
@@ -177,6 +187,13 @@ html.expired .hero,html.expired .wrap .facts,html.expired .wrap section,html.exp
   </div>
 
   <footer>本頁面為物件資訊整理，法拍資訊以法院公告為準。智慧財產，抄襲必究。</footer>
+
+  <audio id="voice" src="intro.mp3" preload="auto"></audio>
+  <button id="voiceBtn" class="voice-fab" type="button" aria-label="播放語音介紹">
+    <span class="eq" aria-hidden="true"><span></span><span></span><span></span></span>
+    <span id="voiceLabel">🔊 語音介紹</span>
+  </button>
+
 <script>
 (function(){
   var AUCTION="2026-08-05", GRACE=3; // 拍賣日 + 3 天後自動下架
@@ -185,7 +202,49 @@ html.expired .hero,html.expired .wrap .facts,html.expired .wrap section,html.exp
   if(new Date()>=dd){
     document.documentElement.classList.add("expired");
     document.title="物件已下架｜法拍找慧瑜";
+    return;
   }
+
+  // ===== 法拍女王 陳慧瑜 語音導覽：進站自動播放 =====
+  var audio=document.getElementById("voice");
+  var btn=document.getElementById("voiceBtn");
+  var label=document.getElementById("voiceLabel");
+
+  function ui(playing){
+    btn.classList.toggle("playing",playing);
+    label.textContent=playing?"⏸ 暫停介紹":"🔊 語音介紹";
+    btn.setAttribute("aria-label",playing?"暫停語音介紹":"播放語音介紹");
+  }
+  audio.addEventListener("play",function(){ui(true)});
+  audio.addEventListener("pause",function(){ui(false)});
+  audio.addEventListener("ended",function(){ui(false)});
+
+  btn.addEventListener("click",function(){
+    if(audio.paused){audio.currentTime=0;audio.play();}
+    else{audio.pause();}
+  });
+
+  // 嘗試直接自動播放；被瀏覽器擋下時，改成「第一次互動」立刻播
+  function tryAutoplay(){
+    var p=audio.play();
+    if(p&&p.catch){
+      p.catch(function(){
+        var once=function(){
+          document.removeEventListener("pointerdown",once);
+          document.removeEventListener("touchstart",once);
+          document.removeEventListener("keydown",once);
+          document.removeEventListener("scroll",once);
+          if(audio.paused)audio.play();
+        };
+        document.addEventListener("pointerdown",once);
+        document.addEventListener("touchstart",once,{passive:true});
+        document.addEventListener("keydown",once);
+        document.addEventListener("scroll",once,{passive:true,once:true});
+      });
+    }
+  }
+  if(document.readyState==="complete")tryAutoplay();
+  else window.addEventListener("load",tryAutoplay);
 })();
 </script>
 </body>
