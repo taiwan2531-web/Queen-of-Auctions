@@ -67,6 +67,12 @@ html.expired .hero,html.expired .wrap .facts,html.expired .wrap section,html.exp
 .offline-card .offline-emoji{font-size:3rem}
 .offline-card h1{font-size:1.6rem;font-weight:900;color:var(--brand-dark);margin-top:10px}
 .offline-card p{margin-top:12px;color:var(--muted)}
+
+  /* 語音導覽 */
+  .voice-fab{position:fixed;right:18px;bottom:18px;z-index:99;display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border:none;border-radius:999px;background:var(--accent);color:#fff;font-size:1rem;font-weight:800;letter-spacing:1px;box-shadow:0 8px 24px rgba(0,0,0,.28);cursor:pointer;font-family:inherit}
+  .voice-fab:not(.playing){animation:voicepulse 2s infinite}
+  @keyframes voicepulse{0%{box-shadow:0 0 0 0 rgba(230,60,60,.45)}70%{box-shadow:0 0 0 16px rgba(230,60,60,0)}100%{box-shadow:0 0 0 0 rgba(230,60,60,0)}}
+  html.expired .voice-fab{display:none}
 </style>
 </head>
 <body>
@@ -177,6 +183,25 @@ html.expired .hero,html.expired .wrap .facts,html.expired .wrap section,html.exp
   </div>
 
   <footer>本頁面為物件資訊整理，法拍資訊以法院公告為準。智慧財產，抄襲必究。</footer>
+  <button class="voice-fab" id="voiceBtn" type="button" aria-label="播放物件語音介紹">🔊 <span id="voiceLabel">聽介紹</span></button>
+  <audio id="narration" src="voice.mp3" preload="auto"></audio>
+<script>
+(function(){
+  var au=document.getElementById('narration'),btn=document.getElementById('voiceBtn'),lb=document.getElementById('voiceLabel');
+  function setUI(p){btn.classList.toggle('playing',p);lb.textContent=p?'⏹ 停止':'聽介紹';}
+  function play(){au.play().then(function(){setUI(true)}).catch(function(){});}
+  btn.addEventListener('click',function(){ if(au.paused){play();} else {au.pause();au.currentTime=0;setUI(false);} });
+  au.addEventListener('ended',function(){setUI(false);au.currentTime=0;});
+  // 第一次點擊／觸碰頁面任一處，自動播放介紹（點連結或按鈕除外）
+  var fired=false;
+  document.addEventListener('click',function(e){
+    if(fired)return; fired=true;
+    if(e.target.closest('#voiceBtn')||e.target.closest('a'))return;
+    if(document.documentElement.classList.contains('expired'))return;
+    if(au.paused)play();
+  },true);
+})();
+</script>
 <script>
 (function(){
   var AUCTION="2026-08-11", GRACE=3; // 拍賣日 + 3 天後自動下架
