@@ -189,17 +189,34 @@ html.expired .hero,html.expired .wrap .facts,html.expired .wrap section,html.exp
 (function(){
   var au=document.getElementById('narration'),btn=document.getElementById('voiceBtn'),lb=document.getElementById('voiceLabel');
   function setUI(p){btn.classList.toggle('playing',p);lb.textContent=p?'⏹ 停止':'聽介紹';}
-  function play(){au.play().then(function(){setUI(true)}).catch(function(){});}
-  btn.addEventListener('click',function(){ if(au.paused){play();} else {au.pause();au.currentTime=0;setUI(false);} });
+  function play(){
+    au.play().then(function(){setUI(true);}).catch(function(e){
+      console.log("Autoplay prevented:", e);
+    });
+  }
+  btn.addEventListener('click',function(e){
+    e.stopPropagation();
+    if(au.paused){play();} else {au.pause();au.currentTime=0;setUI(false);}
+  });
   au.addEventListener('ended',function(){setUI(false);au.currentTime=0;});
-  // 第一次點擊／觸碰頁面任一處，自動播放介紹（點連結或按鈕除外）
+  
+  play();
+  
   var fired=false;
-  document.addEventListener('click',function(e){
-    if(fired)return; fired=true;
-    if(e.target.closest('#voiceBtn')||e.target.closest('a'))return;
-    if(document.documentElement.classList.contains('expired'))return;
-    if(au.paused)play();
-  },true);
+  function autoPlayOnGesture(e){
+    if(fired) return;
+    if(e.target.closest('#voiceBtn')||e.target.closest('a')) return;
+    if(document.documentElement.classList.contains('expired')) return;
+    fired=true;
+    play();
+    events.forEach(function(evt){
+      document.removeEventListener(evt, autoPlayOnGesture, true);
+    });
+  }
+  var events=["click","touchstart","touchend","mousedown","keydown","scroll"];
+  events.forEach(function(evt){
+    document.addEventListener(evt, autoPlayOnGesture, true);
+  });
 })();
 </script>
 <script>
