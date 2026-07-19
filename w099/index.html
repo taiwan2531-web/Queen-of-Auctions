@@ -16,12 +16,10 @@ font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-ser
 border:1px solid #2F5578;color:#2F5578;background:#fff}
 .nav-row a.off{opacity:.35;pointer-events:none}
 .hero{border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(34,48,58,.12)}
-.hero .bar{background:#004AAD;color:#fff;font-size:14px;font-weight:700;letter-spacing:.12em;text-align:center;padding:10px 12px}
-.hero .bar.bottom{padding:14px 12px;font-size:clamp(22px,4.5vw,36px);letter-spacing:.06em;line-height:1.3}
-.hero .mid{background:#fff;position:relative;padding:20px 20px 0;display:flex;justify-content:center;align-items:flex-end;min-height:220px}
-.hero .mid img.prop{max-width:min(92%,560px);max-height:380px;border-radius:6px 6px 0 0;object-fit:cover;display:block}
-.hero .mid img.queen{position:absolute;left:16px;bottom:0;width:clamp(72px,12vw,120px);height:auto}
-.mapcap{position:absolute;top:26px;left:26px;background:rgba(0,74,173,.9);color:#fff;font-size:12px;padding:3px 10px;border-radius:999px}
+.hero .bar{background:#004AAD;color:#fff;font-size:clamp(20px,3.8vw,28px);font-weight:800;letter-spacing:.1em;text-align:center;padding:10px 12px}
+.hero .mid{background:#fff;position:relative;padding:0;display:flex;justify-content:center;align-items:flex-end}
+.hero .mid img.prop{width:100%;max-height:560px;object-fit:cover;display:block}
+.hero .mid img.queen{position:absolute;left:12px;bottom:0;width:clamp(84px,14vw,150px);height:auto;filter:drop-shadow(2px 0 4px rgba(0,0,0,.25))}
 .hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;background:#004AAD;padding:0 12px 16px}
 .hero-cta a{text-decoration:none;font-size:clamp(16px,2.6vw,20px);font-weight:800;padding:12px 26px;border-radius:8px;background:#fff;color:#004AAD}
 .hero-cta a.line{background:#06C755;color:#fff}
@@ -64,14 +62,13 @@ html.expired .voice-fab{display:none}
     <a href="../w098/">⬅ 上物件｜高雄鳥松區電梯大樓</a>
     <a href="../w100/">下物件｜仁武區華園街公寓 ➡</a>
   </div>
-  <div class="expired-banner">⚠ 本物件已到期下架（拍賣日 2026-08-12 已逾 3 天寬限期），以下資訊僅供參考。</div>
+  <div class="expired-banner">⚠ 本物件已到期下架（拍賣日 2026-08-12 已逾 1 天寬限期），以下資訊僅供參考。</div>
   <div class="hero">
     <div class="bar">法拍女王 陳慧瑜｜專業代標．未得標免付費</div>
     <div class="mid">
       <img class="prop" src="photo.jpg" alt="鳥松區育成三街透天厝 物件照片">
-      <img class="queen" src="../104woo-assets/queen.jpg" alt="法拍女王 陳慧瑜">
+      <img class="queen" src="../104woo-assets/queen.png" alt="法拍女王 陳慧瑜">
     </div>
-    <div class="bar bottom">0917-270-656｜LINE：a0917270656</div>
     <div class="hero-cta">
       <a href="tel:0917270656">📞 0917-270-656</a>
       <a class="line" href="https://line.me/ti/p/ViiJn43Z7l" target="_blank" rel="noopener">💬 加 LINE 諮詢</a>
@@ -134,7 +131,7 @@ html.expired .voice-fab{display:none}
     <div class="panel full">
       <h3>📝 重要注意事項</h3>
       <ol class="notes">
-        <li><b>下架規則：</b>本物件於拍賣日（2026-08-12）後 3 天寬限期屆滿，即自動顯示「本物件已到期下架」。</li>
+        <li><b>下架規則：</b>本物件於拍賣日（2026-08-12）後 1 天寬限期屆滿，即自動顯示「本物件已到期下架」。</li>
         <li><b>拍賣規則：</b>法拍資訊一切以法院公告為準。看屋與點交條件請以法院公告為準。</li>
         <li><b>投標時限：</b>投標有日期限制，請於開標日前完成投標準備；<b>未得標免付費</b>。</li>
       </ol>
@@ -147,7 +144,7 @@ html.expired .voice-fab{display:none}
 <span id="narrText" hidden>哈囉大家好，我是法拍女王陳慧瑜！今天為您介紹：鳥松區育成三街透天厝，位於高雄市鳥松區育成三街30號5層樓。座落高雄市鳥松區育成三街，透天厝使用彈性大，建坪約136坪，鄰近鳥松國小，生活採買便利。地坪約40坪。8月12號第三拍，底價2743萬、保證金約549萬，有點交。心動不如馬上行動，歡迎撥打電話，或加LINE找慧瑜。未得標免付費。法拍找慧瑜，你的問題，我的專業！</span>
 <script>
 (function(){
-  var AUCTION="2026-08-12", GRACE=3;
+  var AUCTION="2026-08-12", GRACE=1;
   var dd=new Date(AUCTION+"T00:00:00+08:00");
   dd.setDate(dd.getDate()+GRACE);
   if(new Date()>=dd){
