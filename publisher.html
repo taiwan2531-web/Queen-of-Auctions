@@ -383,7 +383,7 @@ document.getElementById('publishForm').addEventListener('submit', async function
     await ghPut('index.html', b64encode(indexHtml), 'feat(' + code + '): 發布新物件卡片 ' + name, idxRes.sha);
     
     pubStatus.className = 'status success';
-    pubStatus.innerHTML = '🎉 成功發布物件！<br>🔗 物件網址：<a href="' + SITE + code + '/" target="_blank" style="color:var(--brand-dark);font-weight:bold">' + SITE + code + '/</a><br>🔊 本地語音克隆已自動排程，陳慧瑜克隆語音將於 1-2 分鐘內自動升級播放。';
+    pubStatus.innerHTML = '🎉 成功發布物件！<br>🔗 物件網址：<a href="' + SITE + code + '/" target="_blank" style="color:var(--brand-dark);font-weight:bold">' + SITE + code + '/</a><br>📋 總覽網址：<a href="' + SITE + '" target="_blank" style="color:var(--brand-dark);font-weight:bold">' + SITE + '</a><br>🔊 本地語音克隆已自動排程，陳慧瑜克隆語音將於 1-2 分鐘內自動升級播放。';
     
     document.getElementById('publishForm').reset();
     document.getElementById('preview').style.display = 'none';
