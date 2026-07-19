@@ -31,8 +31,12 @@ VOICE_NAME = "法拍女王 陳慧瑜"
 
 # 載入 .env 變數
 def load_env():
+    # 優先從環境變數讀取 (支援 GitHub Actions)
+    token = os.environ.get("GITHUB_TOKEN", "").strip()
+    if token:
+        return token
+    # 其次從本地 .env 讀取
     env_path = os.path.join(REPO_DIR, ".env")
-    token = ""
     if os.path.exists(env_path):
         with open(env_path, "r", encoding="utf-8") as f:
             for line in f:
