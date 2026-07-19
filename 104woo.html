@@ -923,6 +923,44 @@ function detailView(id){
   setTimeout(()=>{ if(location.hash === '#/item/' + id) speak(narrText(i)); }, 400);
 }
 
+/* ===================== 管理版密碼閘 ===================== */
+const ADMIN_HASH = 'b0cc4591ccf26a36ef761c0817062b9a3937d5c9ccb82247d11bd899c1ed2c37';
+async function verifyAdminPw(pw){
+  try{
+    if(window.crypto && crypto.subtle){
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+      const hex = [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+      return hex === ADMIN_HASH;
+    }
+  }catch(e){}
+  return btoa(pw) === 'MjUzMTI1MzE=';   // 非安全環境（file://）備援
+}
+function adminGateView(){
+  app.innerHTML = `
+  <div style="max-width:380px;margin:60px auto 0">
+    <div class="panel" style="text-align:center">
+      <div style="font-size:40px">🔒</div>
+      <h3 style="border:none;margin:6px 0 14px">管理版登入</h3>
+      <input type="password" id="admPw" placeholder="請輸入管理密碼" autocomplete="current-password"
+        style="width:100%;padding:10px 12px;font-size:16px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font-family:inherit">
+      <div id="admErr" style="color:var(--bad);font-size:13px;margin-top:8px;min-height:1.2em"></div>
+      <button class="btn" id="admGo" style="width:100%;margin-top:6px;padding:10px 0;font-size:15px">登入</button>
+    </div>
+  </div>`;
+  const tryLogin = async ()=>{
+    if(await verifyAdminPw($('admPw').value)){
+      sessionStorage.setItem('qa_admin_ok', '1');
+      adminView();
+    } else {
+      $('admErr').textContent = '密碼錯誤，請再試一次。';
+      $('admPw').value = ''; $('admPw').focus();
+    }
+  };
+  $('admGo').addEventListener('click', tryLogin);
+  $('admPw').addEventListener('keydown', e=>{ if(e.key === 'Enter') tryLogin(); });
+  $('admPw').focus();
+}
+
 /* ===================== 路由 ===================== */
 let lastList = 'cust';
 function route(){
@@ -932,7 +970,11 @@ function route(){
   $('navCust').classList.toggle('active', !h.startsWith('#/admin') && !mItem);
   $('navAdmin').classList.toggle('active', h.startsWith('#/admin'));
   if(mItem){ detailView(parseInt(mItem[1], 10)); }
-  else if(h.startsWith('#/admin')){ lastList = 'admin'; adminView(); }
+  else if(h.startsWith('#/admin')){
+    lastList = 'admin';
+    if(sessionStorage.getItem('qa_admin_ok') === '1') adminView();
+    else adminGateView();
+  }
   else { lastList = 'cust'; custView(); }
 }
 window.addEventListener('hashchange', route);
