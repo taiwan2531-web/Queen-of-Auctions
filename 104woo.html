@@ -579,7 +579,7 @@ function renderCards(){
 }
 
 /* ===================== 管理版 ===================== */
-const admState = {q:'', city:'', sortKey:'_default', sortDir:1};
+const admState = {q:'', city:'', dist:'', type:'', auc:'', hand:'', pMin:'', pMax:'', sortKey:'_default', sortDir:1};
 const ADM_COLS = [
   {key:'id',      label:'#'},
   {key:'city',    label:'縣市'},
@@ -593,6 +593,7 @@ const ADM_COLS = [
   {key:'price',   label:'底價(萬)'},
   {key:'bld',     label:'建坪'},
   {key:'state',   label:'狀態'},
+  {key:'_url',    label:'網址'},
   {key:'_act',    label:'操作'},
 ];
 function admStateOf(i){
@@ -600,6 +601,11 @@ function admStateOf(i){
   const d = dday(i);
   if(d != null && d < 0) return '寬限期';
   return '上架中';
+}
+function itemUrl(i){
+  if(i.full) return i.full;
+  if(i.page) return new URL(i.page, location.href).href;
+  return location.origin + location.pathname + '#/item/' + i.id;
 }
 function stPill(i){
   const s = admStateOf(i);
@@ -617,6 +623,7 @@ function rowHtml(i){
       <td>${esc(i.type ?? '')}</td><td>${esc(i.auc ?? '')}</td><td>${esc(i.hand ?? '')}</td>
       <td>${esc(i.dateISO ?? '')}</td><td>${d ?? '—'}</td><td>${fmtPrice(i.price)}</td><td>${i.bld ?? '—'}</td>
       <td>${stPill(i)}</td>
+      <td><button class="btn small ghost" data-copy="${i.id}" title="複製物件網址">🔗</button></td>
       <td>
         <button class="btn small ghost" data-edit="${i.id}">編輯</button>
         <button class="btn small ${isDelisted(i)?'':'danger'}" data-flag="${i.id}">${isDelisted(i)?'重新上架':'下架'}</button>
@@ -631,6 +638,13 @@ function attachRows(){
     });
   });
   document.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click', ()=>openForm(Number(b.dataset.edit))));
+  document.querySelectorAll('[data-copy]').forEach(b=>b.addEventListener('click', async ()=>{
+    const i = DATA.find(x=>x.id===Number(b.dataset.copy));
+    const url = itemUrl(i);
+    try{ await navigator.clipboard.writeText(url); b.textContent = '✓'; }
+    catch(e){ window.prompt('複製這個網址：', url); }
+    setTimeout(()=>{ b.textContent = '🔗'; }, 1500);
+  }));
   document.querySelectorAll('[data-flag]').forEach(b=>b.addEventListener('click', ()=>{
     const id = Number(b.dataset.flag);
     const i = DATA.find(x=>x.id===id);
@@ -642,8 +656,15 @@ function attachRows(){
 }
 function admFiltered(){
   const q = admState.q.trim().toLowerCase();
+  const pMin = parseFloat(admState.pMin), pMax = parseFloat(admState.pMax);
   let list = DATA.filter(i=>{
     if(admState.city && i.city !== admState.city) return false;
+    if(admState.dist && i.dist !== admState.dist) return false;
+    if(admState.type && i.type !== admState.type) return false;
+    if(admState.auc && i.auc !== admState.auc) return false;
+    if(admState.hand && i.hand !== admState.hand) return false;
+    if(!isNaN(pMin) && (i.price == null || i.price < pMin)) return false;
+    if(!isNaN(pMax) && (i.price == null || i.price > pMax)) return false;
     if(q){
       const hay = `${i.addr ?? ''} ${i.comm ?? ''} ${i.case ?? ''} ${i.dist ?? ''} ${i.name ?? ''}`.toLowerCase();
       if(!hay.includes(q)) return false;
@@ -672,6 +693,8 @@ function adminView(){
   const live = DATA.filter(i=>!isDelisted(i));
   const soon = live.filter(i=>{const d=dday(i); return d!=null && d>=0 && d<=7;}).length;
   const byCity = cities.map(c=>`<div class="stat"><b>${live.filter(i=>i.city===c).length}</b><span>${esc(c)}</span></div>`).join('');
+  const opts = (values, cur) => values.map(v=>`<option value="${esc(v)}"${v===cur?' selected':''}>${esc(v)}</option>`).join('');
+  const dists = [...new Set(DATA.filter(i=>!admState.city || i.city===admState.city).map(i=>i.dist).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-TW'));
   app.innerHTML = `
   <div class="stats">
     <div class="stat"><b>${live.length}</b><span>上架中物件</span></div>${byCity}
@@ -679,12 +702,20 @@ function adminView(){
     <div class="stat"><b>${DATA.filter(isDelisted).length}</b><span>已下架</span></div>
   </div>
   <div class="toolbar">
-    <div class="admin-bar">
-      <input type="text" id="aq" placeholder="搜尋地址、社區、案號…" aria-label="管理搜尋" value="${esc(admState.q)}">
-      <select id="aCity" aria-label="縣市篩選">
-        <option value="">全部縣市</option>
-        ${cities.map(c=>`<option value="${esc(c)}"${c===admState.city?' selected':''}>${esc(c)}</option>`).join('')}
-      </select>
+    <div class="controls">
+      <input type="text" id="aq" placeholder="搜尋地址、社區、法院案號…" aria-label="管理搜尋" value="${esc(admState.q)}">
+      <select id="aCity" aria-label="縣市"><option value="">全部縣市</option>${opts(cities, admState.city)}</select>
+      <select id="aDist" aria-label="行政區"><option value="">全部行政區</option>${opts(dists, admState.dist)}</select>
+      <select id="aType" aria-label="類型"><option value="">全部類型</option>${opts([...new Set(DATA.map(i=>i.type).filter(Boolean))], admState.type)}</select>
+      <select id="aAuc" aria-label="拍別"><option value="">全部拍別</option>${opts(['第一拍','第二拍','第三拍','第四拍'], admState.auc)}</select>
+      <select id="aHand" aria-label="點交狀態"><option value="">點交不限</option>${opts([...new Set(DATA.map(i=>i.hand).filter(Boolean))], admState.hand)}</select>
+      <span class="price-group">底價
+        <input type="number" id="aPMin" placeholder="最低" min="0" aria-label="最低底價（萬）" value="${esc(admState.pMin)}">–
+        <input type="number" id="aPMax" placeholder="最高" min="0" aria-label="最高底價（萬）" value="${esc(admState.pMax)}">萬
+      </span>
+      <button class="reset" id="aReset">清除條件</button>
+    </div>
+    <div class="admin-bar" style="margin-top:10px">
       <button class="btn" id="addBtn">＋ 手動上架新物件</button>
       <button class="btn ghost" id="offBtn">🗄 下架區（${DATA.filter(isDelisted).length}）</button>
       <button class="btn ghost" id="exportBtn">⬇ 匯出資料</button>
@@ -696,13 +727,22 @@ function adminView(){
     <thead><tr>${ADM_COLS.map(c=>`<th data-key="${c.key}">${c.label} <span class="arr"></span></th>`).join('')}</tr></thead>
     <tbody></tbody>
   </table></div>`;
-  $('aq').addEventListener('input', ()=>{ admState.q=$('aq').value; renderTable(); });
-  $('aCity').addEventListener('change', ()=>{ admState.city=$('aCity').value; renderTable(); });
+  const bind = (id, key) => {
+    $(id).addEventListener('input', ()=>{ admState[key] = $(id).value; renderTable(); });
+    $(id).addEventListener('change', ()=>{ admState[key] = $(id).value; renderTable(); });
+  };
+  bind('aq','q'); bind('aDist','dist'); bind('aType','type'); bind('aAuc','auc'); bind('aHand','hand');
+  bind('aPMin','pMin'); bind('aPMax','pMax');
+  $('aCity').addEventListener('change', ()=>{ admState.city = $('aCity').value; admState.dist = ''; adminView(); });
+  $('aReset').addEventListener('click', ()=>{
+    Object.assign(admState, {q:'', city:'', dist:'', type:'', auc:'', hand:'', pMin:'', pMax:''});
+    adminView();
+  });
   $('addBtn').addEventListener('click', ()=>openForm(null));
   $('offBtn').addEventListener('click', ()=>{ location.hash = '#/admin/off'; });
   $('exportBtn').addEventListener('click', exportData);
   document.querySelectorAll('#aTable th').forEach(th=>{
-    if(th.dataset.key === '_act') return;
+    if(th.dataset.key === '_act' || th.dataset.key === '_url') return;
     th.addEventListener('click', ()=>{
       const k = th.dataset.key;
       if(admState.sortKey === k) admState.sortDir *= -1;
@@ -721,7 +761,7 @@ function renderTable(){
   });
   document.querySelector('#aTable tbody').innerHTML = list.map(rowHtml).join('') ||
     `<tr><td colspan="${ADM_COLS.length}" style="color:var(--dim)">沒有符合條件的物件。</td></tr>`;
-  $('aCount').innerHTML = `上架 <b>${list.length}</b> 件／已下架 ${DATA.filter(isDelisted).length} 件（全部 ${DATA.length} 件）`;
+  $('aCount').innerHTML = `符合 <b>${list.length}</b> 件／已下架 ${DATA.filter(isDelisted).length} 件（全部 ${DATA.length} 件）`;
   attachRows();
 }
 function delistedView(){
