@@ -153,9 +153,9 @@ button.btn.ghost{background:none; color:var(--accent)}
 button.btn.small{padding:3px 10px; font-size:12px}
 button.btn.danger{background:var(--bad); border-color:var(--bad); color:#fff}
 .table-wrap{overflow-x:auto; background:var(--surface); border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow)}
-table.admin{border-collapse:collapse; width:100%; min-width:1080px; font-size:13.5px}
-table.admin th, table.admin td{padding:9px 12px; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap}
-table.admin td.addr-cell{white-space:normal; min-width:200px}
+table.admin{border-collapse:collapse; width:100%; min-width:960px; font-size:13px}
+table.admin th, table.admin td{padding:7px 9px; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap}
+table.admin td.addr-cell{white-space:normal; min-width:170px}
 table.admin th{
   position:sticky; top:0; background:var(--accent); color:var(--accent-ink);
   cursor:pointer; user-select:none; font-weight:700;
@@ -601,12 +601,6 @@ function admStateOf(i){
   if(d != null && d < 0) return '寬限期';
   return '上架中';
 }
-function itemUrl(i){
-  if(i.short) return i.short;
-  if(i.full) return i.full;
-  if(i.page) return new URL(i.page, location.href).href;
-  return location.origin + location.pathname + '#/item/' + i.id;
-}
 function stPill(i){
   const s = admStateOf(i);
   if(s==='已下架') return `<span class="pill dim">已下架</span>`;
@@ -624,7 +618,6 @@ function rowHtml(i){
       <td>${esc(i.dateISO ?? '')}</td><td>${d ?? '—'}</td><td>${fmtPrice(i.price)}</td><td>${i.bld ?? '—'}</td>
       <td>${stPill(i)}</td>
       <td>
-        <button class="btn small ghost" data-copy="${i.id}">📋 網址</button>
         <button class="btn small ghost" data-edit="${i.id}">編輯</button>
         <button class="btn small ${isDelisted(i)?'':'danger'}" data-flag="${i.id}">${isDelisted(i)?'重新上架':'下架'}</button>
       </td>
@@ -638,13 +631,6 @@ function attachRows(){
     });
   });
   document.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click', ()=>openForm(Number(b.dataset.edit))));
-  document.querySelectorAll('[data-copy]').forEach(b=>b.addEventListener('click', async ()=>{
-    const i = DATA.find(x=>x.id===Number(b.dataset.copy));
-    const url = itemUrl(i);
-    try{ await navigator.clipboard.writeText(url); b.textContent = '✓ 已複製'; }
-    catch(e){ window.prompt('複製這個網址：', url); }
-    setTimeout(()=>{ b.textContent = '📋 網址'; }, 1500);
-  }));
   document.querySelectorAll('[data-flag]').forEach(b=>b.addEventListener('click', ()=>{
     const id = Number(b.dataset.flag);
     const i = DATA.find(x=>x.id===id);
