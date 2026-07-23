@@ -1,6 +1,7 @@
 # 系統暫存
 .DS_Store
 Thumbs.db
+Desktop.ini
 *.tmp
 *.log
 
@@ -9,6 +10,10 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
 *~
 .editorconfig
 
@@ -17,6 +22,8 @@ Thumbs.db
 .obsidian/workspace.json
 .obsidian/cache
 .obsidian/.DS_Store
+obsidian/workspace
+obsidian/workspace.json
 
 # Node modules（如有使用）
 node_modules/
@@ -32,4 +39,5 @@ dist/
 
 # 音聲克隆臨時檔
 *.wav
+temp_*
 temp_speech.mp3
