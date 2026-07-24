@@ -25,11 +25,11 @@
 > 這個 seam 收斂前，同一規則曾散落於 `104woo.html`、`template.html`、410 張物件頁與生成器，出現「3 小時／3 天／1 天」三種互相矛盾的版本。deletion test：刪掉 `delist.js`，下架複雜度會重現在所有消費者——證明它 earning its keep。
 
 ### 生成器（Generator）
-把物件資料變成物件頁的東西。有兩個 adapter，共用同一個規則 seam（`delist.js`）、同一頁面模板慣例：
-- `publisher.html` + `template.html`：瀏覽器手動發布單筆，填 `{{PLACEHOLDER}}`。
-- `publish_new.py`（位於「法拍 104」專案）：批次產線，一次生成多筆。
+把物件資料變成物件頁的東西。目前是 `publish_new.py`（位於「法拍 104」專案）批次產線，一次生成多筆 `wNNN` 物件頁。
 
-生成器**不再內嵌下架規則**，只輸出 `<body data-auction>` data 屬性 + `<script src="../104woo-assets/delist.js">`。
+生成器**不內嵌下架規則**，只輸出 `<body data-auction>` data 屬性 + `<script src="../104woo-assets/delist.js">`。
+
+> **舊系統（已於 2026-07-24 退役）**：`publisher.html`（瀏覽器手動發布）＋ `template.html`（模板）＋ `index.html`（舊總覽）＋ hash 代號物件（如 `3kagzo/`）。工具檔已刪除，僅保留 hash 代號物件頁作封存（各自內嵌舊下架 script，不依賴 `delist.js`）。
 
 ### 語音克隆（Voice clone）
 物件頁的 `voice.mp3`，由「法拍女王 陳慧瑜」參考音色（`voices/法拍女王 陳慧瑜/`）克隆。雲端 `sync_voices.py`（GitHub Actions，缺 `voice.mp3` 才生成）或本地流程產生。參考音色是唯一真理源，換音色只需替換該資料夾內的 `ref_voice.wav` + `prompt.txt`。
