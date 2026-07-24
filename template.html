@@ -76,7 +76,7 @@ html.expired .hero,html.expired .wrap .facts,html.expired .wrap section,html.exp
 html.expired .voice-fab{display:none}
 </style>
 </head>
-<body>
+<body data-auction="{{AUCTION_DATE}}" data-auction-time="{{AUCTION_TIME}}">
   <div class="offline-notice">
     <div class="offline-card">
       <div class="offline-emoji">🔚</div>
@@ -195,6 +195,7 @@ html.expired .voice-fab{display:none}
   <button class="voice-fab" id="voiceBtn" type="button" aria-label="播放物件語音介紹">🔊 <span id="voiceLabel">聽介紹</span></button>
   <audio id="narration" src="voice.mp3" preload="auto"></audio>
   <span id="narrText" hidden>{{NARRATION}}</span>
+<script src="../104woo-assets/delist.js"></script>
 <script>
 (function(){
   if(document.documentElement.classList.contains("expired"))return;
@@ -236,17 +237,6 @@ html.expired .voice-fab{display:none}
   });
   attempt(false);
   GES.forEach(function(ev){document.addEventListener(ev,onG,true)});
-})();
-</script>
-<script>
-(function(){
-  var AUCTION="{{AUCTION_DATE}}", GRACE=3; // 拍賣日 + 3 天後自動下架
-  var dd=new Date(AUCTION+"T00:00:00+08:00");
-  dd.setDate(dd.getDate()+GRACE);
-  if(new Date()>=dd){
-    document.documentElement.classList.add("expired");
-    document.title="物件已下架｜法拍找慧瑜";
-  }
 })();
 </script>
 </body>

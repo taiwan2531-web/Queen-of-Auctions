@@ -328,6 +328,7 @@ document.getElementById('publishForm').addEventListener('submit', async function
       .replace(/\{\{IMG_EXT\}\}/g, ext)
       .replace(/\{\{AUCTION_DATE\}\}/g, auctionDate)
       .replace(/\{\{AUCTION_DATE_SHORT\}\}/g, shortDate)
+      .replace(/\{\{AUCTION_TIME\}\}/g, '')
       .replace(/\{\{AUCTION_ROUND\}\}/g, auctionRound)
       .replace(/\{\{HANDOVER\}\}/g, handover)
       .replace(/\{\{HANDOVER_CLASS\}\}/g, handover === '有點交' ? 'ok' : 'hi')

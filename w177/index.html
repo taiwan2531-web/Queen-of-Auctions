@@ -54,7 +54,7 @@ html.expired .voice-fab{display:none}
 @media(max-width:720px){.grid{grid-template-columns:1fr}}
 </style>
 </head>
-<body>
+<body data-auction="2026-07-22" data-auction-time="10：30">
 <div class="wrap">
   <div class="nav-row">
     <a href="../104woo.html">← 回物件總覽</a>
@@ -142,17 +142,7 @@ html.expired .voice-fab{display:none}
 <button class="voice-fab" id="voiceBtn" type="button" aria-label="播放物件語音介紹">🔊 <span id="voiceLabel">聽介紹</span></button>
 <audio id="narration" src="voice.mp3" preload="auto"></audio>
 <span id="narrText" hidden>哈囉大家好，我是法拍女王陳慧瑜！今天為您介紹：屏東高樹鄉透天厝，位於屏東縣高樹鄉長美三巷8號2層樓。座落屏東縣高樹鄉，透天厝使用彈性大，建坪約49坪，生活採買便利，首拍釋出可把握。地坪約73坪。7月22號第一拍，底價241萬、保證金約48萬，不點交。心動不如馬上行動，歡迎撥打電話，或加LINE找慧瑜。未得標免付費。法拍找慧瑜，你的問題，我的專業！</span>
-<script>
-(function(){
-  var AUCTION="2026-07-22", GRACE=1;
-  var dd=new Date(AUCTION+"T00:00:00+08:00");
-  dd.setDate(dd.getDate()+GRACE);
-  if(new Date()>=dd){
-    document.documentElement.classList.add("expired");
-    document.title="物件已下架｜法拍找慧瑜";
-  }
-})();
-</script>
+<script src="../104woo-assets/delist.js"></script>
 <script>
 (function(){
   if(document.documentElement.classList.contains("expired"))return;

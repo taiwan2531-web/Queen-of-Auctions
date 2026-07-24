@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<title>delist.js 測試</title>
+<style>
+  body{font-family:system-ui,"Microsoft JhengHei",sans-serif;max-width:760px;margin:32px auto;padding:0 16px;color:#22303A}
+  h1{font-size:20px}
+  .summary{font-size:18px;font-weight:800;padding:10px 14px;border-radius:8px;margin:12px 0}
+  .summary.ok{background:#E7F2EB;color:#2E7D4F}
+  .summary.fail{background:#F8ECEA;color:#B3352C}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th,td{text-align:left;padding:7px 10px;border-bottom:1px solid #E1E3DE}
+  td.r{font-weight:700}
+  .pass{color:#2E7D4F}.fail{color:#B3352C}
+  code{background:#EDF1F5;padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+<h1>🧪 delist.js — <code>isExpired</code> 單元測試</h1>
+<div id="summary" class="summary">執行中…</div>
+<table><thead><tr><th>#</th><th>案例</th><th>預期</th><th>實得</th><th>結果</th></tr></thead>
+<tbody id="rows"></tbody></table>
+
+<!-- 被測模組 -->
+<script src="104woo-assets/delist.js"></script>
+<script>
+(function(){
+  var HOUR = 3600000;
+  // 固定一個「開標時刻」基準，方便用 nowMs 相對推算（台灣 +08:00）
+  var iso = '2026-08-01';
+  var startMs = new Date(iso + 'T14:30:00+08:00').getTime();     // 14:30 開標
+  var noonStartMs = new Date(iso + 'T17:00:00+08:00').getTime(); // 未知時間 → 17:00 起算
+
+  var cases = [
+    ['開標前 1 小時 → 未過期',            Delist.isExpired(iso,'14:30', startMs - 1*HOUR),              false],
+    ['開標 + 2 小時（時窗內）→ 未過期',   Delist.isExpired(iso,'14:30', startMs + 2*HOUR),              false],
+    ['開標 + 3 小時又 1 分 → 已過期',     Delist.isExpired(iso,'14:30', startMs + 3*HOUR + 60000),      true],
+    ['剛好 3 小時整（邊界）→ 未過期',     Delist.isExpired(iso,'14:30', startMs + 3*HOUR),              false],
+    ['time="00:00" 視為未知，用 17:00：當日 12:00 → 未過期', Delist.isExpired(iso,'00:00', new Date(iso+'T12:00:00+08:00').getTime()), false],
+    ['time="00:00" 用 17:00 起算：20:01 → 已過期',           Delist.isExpired(iso,'00:00', noonStartMs + 3*HOUR + 60000),              true],
+    ['time="" 空值同樣回退 17:00：12:00 → 未過期',           Delist.isExpired(iso,'',      new Date(iso+'T12:00:00+08:00').getTime()), false],
+    ['全形冒號 "14：30" 可解析：+4h → 已過期',               Delist.isExpired(iso,'14：30', startMs + 4*HOUR),                          true],
+    ['無 dateISO → 不過期（保守顯示）', Delist.isExpired('', '14:30', startMs + 99*HOUR),             false],
+    ['DELIST_HOURS 常數 = 3',            Delist.DELIST_HOURS,                                          3]
+  ];
+
+  var rows = document.getElementById('rows'), passed = 0;
+  cases.forEach(function(c, i){
+    var ok = c[1] === c[2];
+    if(ok) passed++;
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td>'+(i+1)+'</td><td>'+c[0]+'</td><td class="r">'+c[2]+
+      '</td><td class="r">'+c[1]+'</td><td class="'+(ok?'pass':'fail')+'">'+(ok?'✓ PASS':'✗ FAIL')+'</td>';
+    rows.appendChild(tr);
+  });
+
+  var s = document.getElementById('summary');
+  var allOk = passed === cases.length;
+  s.className = 'summary ' + (allOk ? 'ok' : 'fail');
+  s.textContent = (allOk ? '✓ 全部通過' : '✗ 有失敗') + '：' + passed + ' / ' + cases.length;
+})();
+</script>
+</body>
+</html>
