@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-Hant-TW">
 <head>
 <meta charset="UTF-8">
@@ -26,7 +26,8 @@
   .item .body{padding:16px 18px 20px}
   .tag-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
   .tag{font-size:.78rem;font-weight:700;padding:3px 10px;border-radius:999px;background:#eef3fb;color:var(--brand)}
-  .tag.hot{background:var(--accent);color:#fff}
+  .tag.hot{background:#06c755;color:#fff}
+  .tag.warn{background:var(--accent);color:#fff}
   .item h2{font-size:1.1rem;font-weight:800;line-height:1.5}
   .item .addr{font-size:.88rem;color:var(--muted);margin-top:4px}
   .item .price{margin-top:10px;font-size:1.05rem;font-weight:700;color:var(--muted)}
@@ -61,20 +62,77 @@
 
   <div class="wrap">
     <div class="listing">
-      <!-- ▼ 物件卡片：每新增一筆物件，複製一個 .item ▼ -->
+
+      <!-- 卡片 1: 仁德德善路305巷 -->
+      <a class="item" href="deshan305/" data-auction="2026-08-04">
+        <img src="deshan305/deshan305.jpg" alt="仁德交流道・仁德國中靜巷 3層車庫透天">
+        <div class="body">
+          <div class="tag-row">
+            <span class="tag">08/04 第3拍</span>
+            <span class="tag hot">有點交</span>
+          </div>
+          <h2>仁德交流道 仁德國中靜巷 3層車庫透天🏠</h2>
+          <div class="addr">📍 台南市仁德區德善路305巷13弄25號</div>
+          <div class="price">底價 <b>761</b> 萬</div>
+        </div>
+      </a>
+
+      <!-- 卡片 2: 成大東豐路85巷 -->
+      <a class="item" href="dongfeng85/" data-auction="2026-08-04">
+        <img src="dongfeng85/dongfeng85.jpg" alt="成功大學商圈 8層電梯透天（25間套房）">
+        <div class="body">
+          <div class="tag-row">
+            <span class="tag">08/04 第3拍</span>
+            <span class="tag warn">不點交</span>
+          </div>
+          <h2>成大商圈 8層電梯透天 25間套房收租宅🏢</h2>
+          <div class="addr">📍 台南市北區東豐路85巷24號</div>
+          <div class="price">底價 <b>4,032</b> 萬</div>
+        </div>
+      </a>
+
+      <!-- 卡片 3: 左營重仁路52號 -->
+      <a class="item" href="chongren52/" data-auction="2026-08-05">
+        <img src="chongren52/chongren52.jpg" alt="高雄左營甜蜜生活 2房平車電梯大樓">
+        <div class="body">
+          <div class="tag-row">
+            <span class="tag">08/05 第3拍（金拍）</span>
+            <span class="tag hot">有點交</span>
+          </div>
+          <h2>甜蜜生活 近左營高鐵站 2房平車電梯大樓🏢</h2>
+          <div class="addr">📍 高雄市左營區重仁路52號2樓-1</div>
+          <div class="price">底價 <b>810</b> 萬</div>
+        </div>
+      </a>
+
+      <!-- 卡片 4: 佳冬進學街118號 -->
       <a class="item" href="k2rojm/" data-auction="2026-08-05">
-        <img src="k2rojm/k2rojm.jpg" alt="⛳️屏東縣佳冬鄉進學街118號👍👍👍 理想家７❤️佳冬國小旁大地坪雙車庫3層四年透天🏠">
+        <img src="k2rojm/k2rojm.jpg" alt="理想家７ 佳冬國小旁大地坪雙車庫3層透天">
         <div class="body">
           <div class="tag-row">
             <span class="tag">08/05 第3拍</span>
             <span class="tag hot">有點交</span>
           </div>
-          <h2>理想家７❤️佳冬國小旁大地坪雙車庫3層四年透天🏠</h2>
-          <div class="addr">📍 ⛳️屏東縣佳冬鄉進學街118號👍👍👍</div>
+          <h2>理想家７ 佳冬國小旁大地坪雙車庫3層透天🏠</h2>
+          <div class="addr">📍 屏東縣佳冬鄉進學街118號</div>
           <div class="price">底價 <b>1,074</b> 萬</div>
         </div>
       </a>
-      <!-- ▲ 物件卡片結束 ▲ -->
+
+      <!-- 卡片 5: 前鎮鄭和路59號 -->
+      <a class="item" href="zhenghe59/" data-auction="2026-08-11">
+        <img src="zhenghe59/zhenghe59.jpg" alt="皇家貴賓 亞灣區高樓層3房車位">
+        <div class="body">
+          <div class="tag-row">
+            <span class="tag">08/11 第2拍</span>
+            <span class="tag hot">有點交</span>
+          </div>
+          <h2>皇家貴賓 民權國小亞灣區高樓層 3房車位🏢</h2>
+          <div class="addr">📍 高雄市前鎮區鄭和路59號23樓</div>
+          <div class="price">底價 <b>1,248</b> 萬</div>
+        </div>
+      </a>
+
     </div>
 
     <div class="empty-state" hidden>
@@ -103,7 +161,7 @@
   <footer>本頁面為物件資訊整理，法拍資訊以法院公告為準。智慧財產，抄襲必究。</footer>
 <script>
 (function(){
-  var GRACE=3, now=new Date(), any=false; // 拍賣日 + 3 天後自動隱藏
+  var GRACE=3, now=new Date(), any=false;
   document.querySelectorAll(".item[data-auction]").forEach(function(a){
     var d=new Date(a.dataset.auction+"T00:00:00+08:00");
     d.setDate(d.getDate()+GRACE);
@@ -114,4 +172,3 @@
 </script>
 </body>
 </html>
-
