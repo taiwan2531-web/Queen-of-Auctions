@@ -19,6 +19,7 @@ import base64
 import subprocess
 import requests
 import io
+import time
 
 # 強制標準輸出與標準錯誤輸出設定為 UTF-8
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -103,7 +104,19 @@ def main():
             
     print(f"找到的物件資料夾：{folders}")
 
+    # 時間預算：GitHub Actions 單一 job 上限 6 小時。CPU 生成一筆語音約 10~15 分鐘，
+    # 一次 run 跑不完全部缺語音的物件，故在接近上限前主動收工，讓 run 以成功結束；
+    # 已生成的語音都已即時上傳，再次觸發 workflow 即可接續處理剩餘物件。
+    budget_sec = float(os.environ.get("VOICE_TIME_BUDGET_SEC", 4.5 * 3600))
+    started_at = time.time()
+    done_count = 0
+
     for folder in folders:
+        elapsed = time.time() - started_at
+        if elapsed > budget_sec:
+            print(f"\n⏱ 已用 {elapsed/3600:.1f} 小時，達本次時間預算，先收工。"
+                  f"本次完成 {done_count} 筆；再次觸發 workflow 可接續剩餘物件。")
+            break
         print(f"\n📂 正在處理物件「{folder}」...")
         folder_contents = list_repo_contents(folder, token)
         
@@ -194,7 +207,8 @@ def main():
         # 清理臨時檔案
         if os.path.exists(temp_wav): os.remove(temp_wav)
         if os.path.exists(temp_mp3): os.remove(temp_mp3)
-        print(f"  物件「{folder}」克隆語音已完成並上傳！")
+        done_count += 1
+        print(f"  物件「{folder}」克隆語音已完成並上傳！（本次累計 {done_count} 筆）")
 
 if __name__ == "__main__":
     main()

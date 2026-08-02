@@ -33,11 +33,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python sync_voices.py
-
-      - name: Commit and Push changes
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add **/voice.mp3
-          git diff-index --quiet HEAD || git commit -m "chore: auto-generate clone voice via GitHub Actions"
-          git push
+      # 註：sync_voices.py 每產生一個 voice.mp3 就直接以 GitHub API 上傳（見其 upload_file），
+      # 因此不需要再 commit/push。原本的「Commit and Push changes」步驟因 checkout 落後於
+      # 腳本推進後的遠端，每次都以 non-fast-forward 失敗，讓整個 run 被標成 failure，故移除。
