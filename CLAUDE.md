@@ -3,9 +3,9 @@
 本專案是用於管理與發布「👑 法拍女王 陳慧瑜」法拍物件之網頁工具。透過發布工具，使用者可直接發布新物件，物件頁將會被推送到 GitHub 倉庫，並在幾分鐘內自動由本地語音克隆工具（VoxCPM2）生成法拍女王陳慧瑜的真人克隆語音 `voice.mp3`。
 
 ## 三處同步對照表
-* **本地專案路徑**：`G:\我的雲端硬碟\ai agent\法拍物件網頁發布工具`
+* **本地專案路徑**：`g:\我的雲端硬碟\ai agent\Queen-of-Auctions`
 * **GitHub 倉庫 URL**：`https://github.com/taiwan2531-web/Queen-of-Auctions`
-* **Obsidian 資料夾路徑**：`G:\我的雲端硬碟\ai agent\法拍物件網頁發布工具\obsidian`
+* **Obsidian 資料夾路徑**：`g:\我的雲端硬碟\ai agent\Queen-of-Auctions\obsidian`
 
 ---
 
