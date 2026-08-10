@@ -21,11 +21,13 @@ REF_WAV = os.path.join(VOICE_DIR, "ref_voice.wav")
 PROMPT_TXT = os.path.join(VOICE_DIR, "prompt.txt")
 COMMIT_EVERY = 10
 
-# ffmpeg：winget 安裝後 PATH 需重開 shell 才生效，故直接指向實體路徑（找不到才退回 PATH）
-_FF = (r"C:\Users\ken\AppData\Local\Microsoft\WinGet\Packages"
-       r"\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe"
-       r"\ffmpeg-8.1.2-full_build\bin\ffmpeg.exe")
-FFMPEG = _FF if os.path.exists(_FF) else "ffmpeg"
+# ffmpeg：winget 安裝後 PATH 需重開 shell 才生效，故直接指向實體路徑。
+# 資料夾名含版本號（ffmpeg-9.0-full_build），會隨更新改變，所以用萬用字元找最新的一個。
+import glob
+_FF_GLOB = os.path.join(os.environ.get("LOCALAPPDATA", ""), "Microsoft", "WinGet", "Packages",
+                        "Gyan.FFmpeg_*", "ffmpeg-*-full_build", "bin", "ffmpeg.exe")
+_FF = sorted(glob.glob(_FF_GLOB))
+FFMPEG = _FF[-1] if _FF else "ffmpeg"
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--limit", type=int, default=0, help="只處理前 N 筆（0=全部）")

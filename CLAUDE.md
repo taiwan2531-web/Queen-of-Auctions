@@ -31,11 +31,24 @@
 
 尺寸是照版面實際比例訂的，瀏覽器 `object-fit:cover` 才不會把價格裁掉；`.card .photo` 因此鎖成 `aspect-ratio:33/17`。
 
-**新物件上架後務必補跑**（兩支都可重複執行、只讀原始底圖，隨時可刪衍生檔還原）：
+**新物件上架後務必補跑**（都可重複執行、只讀原始底圖，隨時可刪衍生檔還原）：
 ```
+python fix_city_labels.py                # 先修縣市標籤（會改講稿，必須早於語音生成）
 powershell -File burn_price.ps1          # 生成 card.jpg / hero.jpg（-Force 可全部重做）
 powershell -File apply_price_images.ps1  # 網頁改指向燒價圖（-WhatIf 可先預覽）
 ```
+> ⚠ **順序很重要**：`fix_city_labels.py` 會改動物件名稱與 `narrText` 講稿，
+> 必須在 `local_voice_batch.py` **之前**執行，否則語音會唸到錯誤內容而需要重生。
+
+### 縣市標籤錯置（每批爬蟲都會發生）
+104 法拍網以「查詢縣市」標記物件，查**嘉義縣**會一併回傳**嘉義市**的物件，且行政區被縮寫成「嘉市」。
+後果：客戶用縣市篩選找嘉義市時這些物件不會出現；`publish_new.py` 還會把「嘉市」寫進物件名稱、
+`og:description` 與語音講稿（「座落嘉義縣嘉市」）。
+
+`fix_city_labels.py` 兩段都可重複執行：
+1. **縣市標籤修正**：地址開頭的縣市與 `city` 不符時以地址為準；`dist` 沒出現在地址裡（如「嘉市」）就清空；
+   連帶修正物件名稱前綴與 `座落…` 文字。
+2. **導覽連結名稱同步**：物件改名時，相鄰兩頁的「上物件／下物件」連結仍寫著舊名稱，這段每次都會校正。
 > ⚠ 兩支 `.ps1` 含中文，必須存成 **UTF-8 with BOM**，否則 PowerShell 5.1 會用 ANSI 讀而解析失敗。
 > 底價若有異動，重跑 `burn_price.ps1 -Force` 重新生成即可。
 
@@ -59,8 +72,17 @@ powershell -File apply_price_images.ps1  # 網頁改指向燒價圖（-WhatIf �
 本機有 RTX 5070，跑一筆約 **38 秒**；雲端 GitHub Actions 為 CPU，一筆約 20 分鐘（且有 6 小時上限）。
 新物件上架後補語音，優先用本機：
 ```
-& "C:\Users\ken\voxcpm\Scripts\python.exe" local_voice_batch.py
+& "C:\Users\ken\.venvs\voxcpm\Scripts\python.exe" local_voice_batch.py
 ```
+> 環境若不見了（2026-08-10 就發生過一次），重建方式 —— venv 建在本機碟，**不要**建在 Google Drive 內，
+> 否則上萬個檔案會被同步：
+> ```
+> uv venv "C:\Users\ken\.venvs\voxcpm" --python 3.12
+> uv pip install --python "C:\Users\ken\.venvs\voxcpm\Scripts\python.exe" torch --index-url https://download.pytorch.org/whl/cu128
+> uv pip install --python "C:\Users\ken\.venvs\voxcpm\Scripts\python.exe" voxcpm sounddevice resampy soundfile
+> winget install -e --id Gyan.FFmpeg
+> ```
+> 參考音色 `voices/法拍女王 陳慧瑜/`（`ref_voice.wav` ＋ `prompt.txt`）在 repo 內，是音色的唯一真理源。
 `local_voice_batch.py` 會掃出所有缺 `voice.mp3` 的物件，模型只載入一次，逐筆生成並每 10 筆 commit，最後自動 push。
 
 ### 語音克隆機制

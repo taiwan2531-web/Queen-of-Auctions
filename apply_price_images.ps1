@@ -36,8 +36,9 @@ $htmlPath = Join-Path $Root '104woo.html'
 $html = Read-Text $htmlPath
 $before = $html
 
-# 前面限定 , 或 { ，避免誤中 "mapimg":" 之類以 img 結尾的欄位名
-$pattern = '([,{])"img":"(w\d+)/(photo|map)\.jpg"'
+# 前面限定 , 或 { ，避免誤中 "mapimg":" 之類以 img 結尾的欄位名。
+# 一併吃掉既有的 thumb／hero 再重寫，這樣重複執行不會插出重複的 JSON key。
+$pattern = '([,{])(?:"thumb":"w\d+/card\.jpg",)?(?:"hero":"w\d+/hero\.jpg",)?"img":"(w\d+)/(photo|map)\.jpg"'
 $added = 0
 $html = [regex]::Replace($html, $pattern, {
   param($m)

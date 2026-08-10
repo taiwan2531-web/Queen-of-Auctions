@@ -29,6 +29,10 @@ obsidian/workspace.json
 node_modules/
 package-lock.json
 
+# Python 快取
+__pycache__/
+*.pyc
+
 # 環境變數
 .env
 .env.local
