@@ -15,7 +15,29 @@
 * `index.html`：物件總覽首頁。自動隱藏已過期的卡片。
 * `publisher.html`：發布與管理（下架）物件的網頁工具。
 * `template.html`：物件網頁的 HTML 模板，包含 `{{PLACEHOLDERS}}` 供發布工具替換。
-* `[物件代號]/`：發布後產生的物件資料夾，內含 `index.html`、`[物件代號].jpg`（圖片）與 `voice.mp3`（真人語音）。
+* `[物件代號]/`：發布後產生的物件資料夾（代號為 `wNNN`），內含：
+  * `index.html`：物件頁
+  * `photo.jpg`：原始實景照（**約 22% 的物件沒有實景照，改放 `map.jpg` 地圖截圖**）
+  * `card.jpg` / `hero.jpg`：由 `burn_price.ps1` 產生的**燒價圖**（見下節），原始底圖不會被改動
+  * `voice.mp3`：真人克隆語音
+
+### 照片底價標示（燒進圖片檔）
+物件照片上會燒上「拍賣底價」，讓價格在 LINE／FB 分享縮圖也看得到（`og:image` 指向 `hero.jpg`）。
+
+| 檔案 | 尺寸 | 樣式 | 用途 |
+|------|------|------|------|
+| `card.jpg` | 660×340 | 右下角深藍價格牌＋金色數字 | 總覽卡片（BASE_ITEMS 的 `thumb`） |
+| `hero.jpg` | 1422×840 | 底部漸層＋超大白字＋單價 | 物件頁大圖、`og:image`、頁內詳細頁（`hero`） |
+
+尺寸是照版面實際比例訂的，瀏覽器 `object-fit:cover` 才不會把價格裁掉；`.card .photo` 因此鎖成 `aspect-ratio:33/17`。
+
+**新物件上架後務必補跑**（兩支都可重複執行、只讀原始底圖，隨時可刪衍生檔還原）：
+```
+powershell -File burn_price.ps1          # 生成 card.jpg / hero.jpg（-Force 可全部重做）
+powershell -File apply_price_images.ps1  # 網頁改指向燒價圖（-WhatIf 可先預覽）
+```
+> ⚠ 兩支 `.ps1` 含中文，必須存成 **UTF-8 with BOM**，否則 PowerShell 5.1 會用 ANSI 讀而解析失敗。
+> 底價若有異動，重跑 `burn_price.ps1 -Force` 重新生成即可。
 
 ### 批次上架前必做：重複檢查
 上架新物件前，**務必先做重複比對**，確認沒有重複才生成頁面：
