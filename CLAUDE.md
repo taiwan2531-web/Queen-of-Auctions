@@ -26,8 +26,12 @@
 
 | 檔案 | 尺寸 | 樣式 | 用途 |
 |------|------|------|------|
-| `card.jpg` | 660×340 | 右下角深藍價格牌＋金色數字 | 總覽卡片（BASE_ITEMS 的 `thumb`） |
-| `hero.jpg` | 1422×840 | 底部漸層＋超大白字＋單價 | 物件頁大圖、`og:image`、頁內詳細頁（`hero`） |
+| `card.jpg` | 660×340 | 右下角深藍價格牌＋金色數字（圖檔內 48px＝畫面 24px） | 總覽卡片（BASE_ITEMS 的 `thumb`） |
+| `hero.jpg` | 1422×840 | 底部漸層＋超大白字＋單價（圖檔內 108px＝畫面約 72px） | 物件頁大圖、`og:image`、頁內詳細頁（`hero`） |
+
+> 字級換算：`card.jpg` 660 寬，卡片最窄（330px）時以 0.5 倍顯示；`hero.jpg` 1422 寬，
+> 版面寬 948px 時以 0.667 倍顯示。要調字級改 `burn_price.ps1` 的 `Draw-BadgeA`／`Draw-BandB`
+> 再 `-Force` 重跑即可（`hero.jpg` 若未改動，重生的位元完全相同，不會產生多餘 diff）。
 
 尺寸是照版面實際比例訂的，瀏覽器 `object-fit:cover` 才不會把價格裁掉；`.card .photo` 因此鎖成 `aspect-ratio:33/17`。
 
@@ -36,7 +40,17 @@
 python fix_city_labels.py                # 先修縣市標籤（會改講稿，必須早於語音生成）
 powershell -File burn_price.ps1          # 生成 card.jpg / hero.jpg（-Force 可全部重做）
 powershell -File apply_price_images.ps1  # 網頁改指向燒價圖（-WhatIf 可先預覽）
+python apply_swipe_nav.py                # 掛上手機滑動切換（見下節）
 ```
+
+### 手機滑動切換物件
+物件頁大圖區域支援左右滑動換物件，實作於 `104woo-assets/swipe-nav.js`（單一真理源，474 頁共用）。
+
+- **左滑 → 上一個物件；右滑 → 下一個物件**。方向對應導覽列位置（「⬅ 上物件」在左、「下物件 ➡」在右），
+  與一般輪播慣例相反是刻意的；要對調只需在 `swipe-nav.js` 把 `dx < 0` 改成 `dx > 0`。
+- 目的地直接讀頁面既有的導覽連結，不需每頁寫死網址；連結為 `class="off"` 時該方向不作用。
+- 門檻：水平位移 ≥ 60px、耗時 < 800ms、且水平位移須大於垂直的 1.5 倍（避免與上下捲動打架）。
+- `publish_new.py` 的母版不含這行 script，**新物件上架後要補跑** `apply_swipe_nav.py`（可重複執行）。
 > ⚠ **順序很重要**：`fix_city_labels.py` 會改動物件名稱與 `narrText` 講稿，
 > 必須在 `local_voice_batch.py` **之前**執行，否則語音會唸到錯誤內容而需要重生。
 

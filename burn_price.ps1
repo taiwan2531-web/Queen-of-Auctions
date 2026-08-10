@@ -137,12 +137,14 @@ function Format-Price($P) {
 
 # ===== 方案 A：右下角價格牌 =====
 function Draw-BadgeA([System.Drawing.Graphics]$G, [int]$W, [int]$H, [string]$Price) {
-  $fLb  = New-Font 22
-  $fNum = New-Font 64
-  $fU   = New-Font 30
+  # card.jpg 是 660 寬，卡片最窄時（330px）以 0.5 倍顯示，
+  # 所以圖檔內 48px = 畫面上 24px。標籤與「萬」等比例縮放。
+  $fLb  = New-Font 17
+  $fNum = New-Font 48
+  $fU   = New-Font 23
   try {
-    $track = 3.0
-    $padX = 26.0; $padTop = 16.0; $padBot = 18.0; $gapLbNum = 8.0; $gapNU = 6.0; $margin = 20.0
+    $track = 2.5
+    $padX = 20.0; $padTop = 13.0; $padBot = 14.0; $gapLbNum = 6.0; $gapNU = 5.0; $margin = 16.0
 
     $wLb  = Measure-Tracked $G '拍賣底價' $fLb $track
     $wNum = Measure-Text $G $Price $fNum
@@ -156,10 +158,10 @@ function Draw-BadgeA([System.Drawing.Graphics]$G, [int]$W, [int]$H, [string]$Pri
     $boxX   = $W - $margin - $boxW
     $boxY   = $H - $margin - $boxH
 
-    $sPath = New-RoundedPath ($boxX + 4) ($boxY + 5) $boxW $boxH 18
+    $sPath = New-RoundedPath ($boxX + 3) ($boxY + 4) $boxW $boxH 13
     $shadow = New-Object System.Drawing.SolidBrush -ArgumentList ([System.Drawing.Color]::FromArgb(70, 0, 0, 0))
     $G.FillPath($shadow, $sPath)
-    $path = New-RoundedPath $boxX $boxY $boxW $boxH 18
+    $path = New-RoundedPath $boxX $boxY $boxW $boxH 13
     $brush = New-Object System.Drawing.SolidBrush -ArgumentList $BRAND
     $G.FillPath($brush, $path)
 
