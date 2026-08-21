@@ -15,7 +15,9 @@ import os, re, sys, time, subprocess, argparse
 
 sys.stdout.reconfigure(encoding="utf-8")
 
-REPO = r"G:\我的雲端硬碟\ai agent\法拍物件網頁發布工具"
+# 自動定位到本腳本所在的 repo，不寫死路徑
+#（2026-08-22：專案曾有兩份 clone，寫死會把語音生成到已封存的那一份）
+REPO = os.path.dirname(os.path.abspath(__file__))
 VOICE_DIR = os.path.join(REPO, "voices", "法拍女王 陳慧瑜")
 REF_WAV = os.path.join(VOICE_DIR, "ref_voice.wav")
 PROMPT_TXT = os.path.join(VOICE_DIR, "prompt.txt")
