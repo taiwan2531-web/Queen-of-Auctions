@@ -4,7 +4,13 @@
 =====================
 規則（與 104woo-assets/delist.js 一致）：
   開標時刻 + DELIST_HOURS(3) 小時 → 下架
-  下架後再滿 PURGE_DAYS(7) 天     → 刪除物件
+  下架後再滿 PURGE_DAYS(30) 天    → 刪除物件
+
+保留期為什麼是 30 天（2026-08-22 改）：
+  流標後重新排拍的物件，案號不變。只要它還留在 BASE_ITEMS，
+  publish_new.py 就能「同案號就地更新」，代號與 tinyurl 短網址不變，
+  已發出去的連結不會失效；被刪掉的話就只能開新代號、舊連結報廢。
+  一拍到二拍實測間隔約 21～35 天，爬蟲每 8～11 天跑一次，30 天足以涵蓋。
 
 刪除內容：
   1. wNNN/ 資料夾（index.html、photo/map.jpg、voice.mp3）
@@ -14,7 +20,7 @@
 用法：
   python purge_expired.py --dry-run     # 只列出，不刪除（建議先跑）
   python purge_expired.py               # 實際刪除並 commit
-  python purge_expired.py --days 30     # 改用 30 天保留期
+  python purge_expired.py --days 7      # 改用 7 天保留期（舊預設）
   python purge_expired.py --push        # 刪除後一併 push
 """
 import argparse
@@ -34,7 +40,7 @@ TZ = timezone(timedelta(hours=8))
 DELIST_HOURS = 3
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--days", type=int, default=7, help="下架後保留天數（預設 7）")
+ap.add_argument("--days", type=int, default=30, help="下架後保留天數（預設 30）")
 ap.add_argument("--dry-run", action="store_true", help="只列出不刪除")
 ap.add_argument("--push", action="store_true", help="刪除後 push 到 GitHub")
 args = ap.parse_args()
