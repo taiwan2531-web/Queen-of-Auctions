@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>照片底價標示 — 樣式範本</title>
+<style>
+:root{
+  --ink:#22303A; --muted:#67717B; --line:#E1E3DE; --bg:#F5F5F1; --surface:#fff;
+  --brand:#004AAD; --accent:#2F5578; --gold:#FFD35C; --red:#B3352C;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  font-size:15px;line-height:1.7}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 18px 80px}
+header.top{border-bottom:2px solid var(--accent);padding-bottom:14px;margin-bottom:8px}
+header.top h1{margin:0 0 6px;font-size:clamp(21px,3.4vw,28px);line-height:1.35}
+header.top p{margin:0;color:var(--muted);font-size:14px}
+h2.sec{font-size:19px;margin:44px 0 6px;padding-left:11px;border-left:5px solid var(--brand)}
+h2.sec .n{color:var(--muted);font-size:13px;font-weight:400;margin-left:8px}
+p.lead{margin:0 0 18px;color:var(--muted);font-size:14px;max-width:70ch}
+
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:20px}
+.opt{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 1px 3px rgba(34,48,58,.09);overflow:hidden;display:flex;flex-direction:column}
+.opt > .hd{padding:13px 16px 11px;border-bottom:1px solid var(--line);background:#FAFAF7}
+.opt > .hd h3{margin:0;font-size:16px}
+.opt > .hd .tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.06em;
+  background:var(--accent);color:#fff;border-radius:999px;padding:2px 9px;margin-right:8px;vertical-align:2px}
+.opt > .hd .desc{margin:5px 0 0;font-size:12.5px;color:var(--muted);line-height:1.6}
+.opt > .bd{padding:16px;display:flex;flex-direction:column;gap:16px;flex:1}
+.pros{margin:0;padding:12px 16px 14px;border-top:1px dashed var(--line);font-size:12.5px;color:var(--muted);list-style:none}
+.pros li{margin:3px 0;padding-left:17px;position:relative}
+.pros li::before{position:absolute;left:0;top:0}
+.pros li.y::before{content:"✔";color:#2E7D4F}
+.pros li.n::before{content:"✕";color:var(--red)}
+
+/* ============ 總覽卡片（104woo.html）原樣式 ============ */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;
+  box-shadow:0 1px 3px rgba(34,48,58,.12);display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.card .photo{height:170px;position:relative;background:#E9ECEF;
+  display:flex;align-items:center;justify-content:center;overflow:hidden}
+.card .photo img{width:100%;height:100%;object-fit:cover;display:block}
+.card .body{padding:12px 16px 16px;display:flex;flex-direction:column;gap:9px;flex:1}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;padding:2px 9px;border-radius:999px;background:#EDF1F5;white-space:nowrap}
+.chip.loc{background:var(--accent);color:#fff;font-weight:600}
+.addr{font-size:16px;font-weight:700;line-height:1.45}
+.comm{font-size:13px;color:var(--muted)}
+.price-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.price{font-size:26px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1.1}
+.price small{font-size:14px;font-weight:600}
+.unit{font-size:13px;color:var(--muted)}
+.auction-row{display:flex;gap:8px;font-size:13px;color:var(--muted);
+  border-top:1px dashed var(--line);padding-top:8px;margin-top:2px}
+.card.mapcase{outline:2px dashed #C8A24A;outline-offset:2px}
+.mapflag{font-size:11px;font-weight:800;color:#8F6A1D;background:#F6EFDD;
+  border-radius:999px;padding:2px 8px;vertical-align:2px;white-space:nowrap}
+
+/* ============ 方案 A：右下角價格牌 ============ */
+.ovA{position:absolute;right:10px;bottom:10px;z-index:3;
+  background:rgba(0,74,173,.93);border-radius:9px;padding:7px 13px 8px;
+  box-shadow:0 3px 10px rgba(0,0,0,.35);line-height:1;text-align:right;
+  backdrop-filter:blur(2px)}
+.ovA .lb{display:block;font-size:11px;font-weight:700;letter-spacing:.14em;color:#CFE0F7;margin-bottom:5px}
+.ovA .num{font-size:32px;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.ovA .u{font-size:15px;font-weight:800;color:#fff;margin-left:3px}
+
+/* ============ 方案 B：底部漸層大字 ============ */
+.ovB{position:absolute;left:0;right:0;bottom:0;z-index:3;
+  padding:34px 13px 10px;
+  background:linear-gradient(to top,rgba(0,0,0,.82) 0%,rgba(0,0,0,.5) 42%,rgba(0,0,0,0) 100%);
+  display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+.ovB .l{line-height:1}
+.ovB .lb{display:block;font-size:11px;font-weight:700;letter-spacing:.14em;color:#E3E7EA;margin-bottom:5px;
+  text-shadow:0 1px 3px rgba(0,0,0,.7)}
+.ovB .num{font-size:40px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums;
+  text-shadow:0 2px 7px rgba(0,0,0,.75);letter-spacing:-.015em}
+.ovB .u{font-size:17px;font-weight:800;margin-left:3px}
+.ovB .sub{font-size:12px;font-weight:700;color:#E3E7EA;text-shadow:0 1px 3px rgba(0,0,0,.7);
+  padding-bottom:4px;white-space:nowrap}
+
+/* ============ 方案 C：底部實色藍條 ============ */
+.ovC{position:absolute;left:0;right:0;bottom:0;z-index:3;
+  background:var(--brand);padding:7px 13px 8px;
+  display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.ovC .lb{font-size:12px;font-weight:800;letter-spacing:.1em;color:#CFE0F7;align-self:center}
+.ovC .num{font-size:31px;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums;line-height:1.05}
+.ovC .u{font-size:15px;font-weight:800;color:#fff;margin-left:3px}
+.ovC .sub{font-size:11.5px;font-weight:700;color:#CFE0F7;align-self:center;white-space:nowrap}
+
+/* ============ 物件頁 hero（wNNN/index.html）============ */
+.hero{border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(34,48,58,.12);margin-bottom:8px}
+.hero .bar{background:var(--brand);color:#fff;font-size:clamp(15px,2.4vw,22px);font-weight:800;
+  letter-spacing:.1em;text-align:center;padding:9px 12px}
+.hero .mid{background:#fff;position:relative;display:flex;justify-content:center;align-items:flex-end}
+.hero .mid img.prop{width:100%;max-height:420px;object-fit:cover;display:block}
+.hero .mid img.queen{position:absolute;left:12px;bottom:0;z-index:4;width:clamp(84px,13vw,140px);height:auto;
+  filter:drop-shadow(2px 0 4px rgba(0,0,0,.25))}
+.hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;background:var(--brand);padding:0 12px 14px}
+.hero-cta span{font-size:clamp(14px,2.1vw,17px);font-weight:800;padding:10px 22px;border-radius:8px;background:#fff;color:var(--brand)}
+.hero-cta span.line{background:#06C755;color:#fff}
+
+.hero .ovA{right:16px;bottom:16px;padding:10px 20px 12px;border-radius:11px}
+.hero .ovA .lb{font-size:13px;margin-bottom:7px}
+.hero .ovA .num{font-size:clamp(38px,6.4vw,60px)}
+.hero .ovA .u{font-size:clamp(18px,2.6vw,24px)}
+
+.hero .ovB{padding:70px 20px 16px;justify-content:flex-end;text-align:right}
+.hero .ovB .l{padding-left:150px}
+.hero .ovB .num{font-size:clamp(40px,7vw,66px)}
+.hero .ovB .u{font-size:clamp(19px,2.8vw,26px)}
+.hero .ovB .lb{font-size:13px}
+.hero .ovB .sub{font-size:14px;padding-bottom:9px}
+
+.hero .ovC{padding:9px 20px 11px;padding-left:165px;z-index:3}
+.hero .ovC .num{font-size:clamp(32px,5.2vw,48px)}
+.hero .ovC .u{font-size:clamp(16px,2.3vw,21px)}
+.hero .ovC .lb{font-size:14px}
+.hero .ovC .sub{font-size:13px}
+
+.stack{display:flex;flex-direction:column;gap:30px}
+.label{font-size:13px;font-weight:800;color:var(--accent);margin:0 0 7px}
+.label span{font-weight:400;color:var(--muted)}
+
+/* 手機預覽 */
+.phones{display:flex;gap:22px;flex-wrap:wrap}
+.phone{width:330px;max-width:100%}
+.phone .cap{font-size:12.5px;color:var(--muted);text-align:center;margin-top:7px}
+
+/* 決策區 */
+.ask{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--brand);
+  border-radius:8px;padding:18px 22px;margin-top:16px}
+.ask h3{margin:0 0 10px;font-size:16px}
+.ask ol{margin:0;padding-left:1.3em}
+.ask li{margin-bottom:11px}
+.ask b{color:var(--accent)}
+.ask .hint{font-size:13px;color:var(--muted);display:block;margin-top:2px}
+table.rt{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:12px}
+table.rt th,table.rt td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+table.rt th{background:#EDF1F5;font-weight:700;white-space:nowrap}
+footer.f{margin-top:52px;border-top:1px solid var(--line);padding-top:16px;font-size:12.5px;color:var(--muted)}
+@media(max-width:640px){.hero .ovB .l{padding-left:96px}.hero .ovC{padding-left:104px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>物件照片加上「拍賣底價」— 樣式範本</h1>
+  <p>三種疊字方案，套在真實物件照片上（總覽卡片＋物件頁大圖）。確認樣式後再全面套用到 348 筆物件。</p>
+</header>
+
+<!-- ==================== 總覽卡片 ==================== -->
+<h2 class="sec">一、總覽卡片<span class="n">104woo.html — 照片高 170px</span></h2>
+<p class="lead">每個方案各示範三張，涵蓋最難壓字的情況：<b>亮色實景照</b>、<b>四位數金額</b>，以及<span class="mapflag">地圖底圖</span>——
+348 筆物件中有 <b>76 筆（22%）沒有實景照</b>，用的是白底彩線的地圖截圖，是最容易「字糊掉」的底圖。若這三張都清楚，其餘照片就沒問題。</p>
+
+<div class="opts">
+
+  <!-- 方案 A -->
+  <div class="opt">
+    <div class="hd">
+      <h3><span class="tag">方案 A</span>右下角價格牌</h3>
+      <p class="desc">深藍底牌＋金色數字，固定貼右下角。不遮擋照片主體，最耐看。</p>
+    </div>
+    <div class="bd">
+      <article class="card">
+        <div class="photo">
+          <img src="../w400/photo.jpg" alt="學甲區信義路公寓">
+          <div class="ovA"><span class="lb">拍賣底價</span><span class="num">132</span><span class="u">萬</span></div>
+        </div>
+        <div class="body">
+          <div class="tags"><span class="chip loc">台南市｜學甲區</span><span class="chip">公寓</span><span class="chip">第一拍</span></div>
+          <div><div class="addr">學甲區信義路公寓</div><div class="comm">台南市學甲區信義路…</div></div>
+          <div class="price-row"><span class="price">132<small> 萬</small></span><span class="unit">單價 14.6 萬/坪</span></div>
+          <div class="auction-row">開標 115/09/16 10:00</div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="photo">
+          <img src="../w405/photo.jpg" alt="東區中華東路透天厝">
+          <div class="ovA"><span class="lb">拍賣底價</span><span class="num">1,821</span><span class="u">萬</span></div>
+        </div>
+        <div class="body">
+          <div class="tags"><span class="chip loc">台南市｜東區</span><span class="chip">透天</span><span class="chip">第一拍</span></div>
+          <div><div class="addr">東區中華東路透天厝</div><div class="comm">台南市東區中華東路…</div></div>
+          <div class="price-row"><span class="price">1,821<small> 萬</small></span><span class="unit">單價 26 萬/坪</span></div>
+          <div class="auction-row">開標 115/09/23 09:00</div>
+        </div>
+      </article>
+      <article class="card mapcase">
+        <div class="photo">
+          <img src="../w404/map.jpg" alt="燕巢區大成路透天厝（地圖）">
+          <div class="ovA"><span class="lb">拍賣底價</span><span class="num">3,740</span><span class="u">萬</span></div>
+        </div>
+        <div class="body">
+          <div class="addr">燕巢區大成路透天厝 <span class="mapflag">地圖底圖</span></div>
+          <div class="price-row"><span class="price">3,740<small> 萬</small></span><span class="unit">單價 54 萬/坪</span></div>
+        </div>
+      </article>
+    </div>
+    <ul class="pros">
+      <li class="y">照片露出最完整，視覺最乾淨</li>
+      <li class="y">四位數金額也塞得下</li>
+      <li class="n">字級受限於角落空間，三方案中最小</li>
+    </ul>
+  </div>
+
+  <!-- 方案 B -->
+  <div class="opt">
+    <div class="hd">
+      <h3><span class="tag">方案 B</span>底部漸層大字</h3>
+      <p class="desc">照片下緣加黑色漸層，直接壓上超大白字。字最大、最搶眼，漸層保證任何照片都讀得到。</p>
+    </div>
+    <div class="bd">
+      <article class="card">
+        <div class="photo">
+          <img src="../w400/photo.jpg" alt="學甲區信義路公寓">
+          <div class="ovB">
+            <div class="l"><span class="lb">拍賣底價</span><span class="num">132</span><span class="u">萬</span></div>
+            <div class="sub">單價 14.6 萬/坪</div>
+          </div>
+        </div>
+        <div class="body">
+          <div class="tags"><span class="chip loc">台南市｜學甲區</span><span class="chip">公寓</span><span class="chip">第一拍</span></div>
+          <div><div class="addr">學甲區信義路公寓</div><div class="comm">台南市學甲區信義路…</div></div>
+          <div class="price-row"><span class="price">132<small> 萬</small></span><span class="unit">單價 14.6 萬/坪</span></div>
+          <div class="auction-row">開標 115/09/16 10:00</div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="photo">
+          <img src="../w405/photo.jpg" alt="東區中華東路透天厝">
+          <div class="ovB">
+            <div class="l"><span class="lb">拍賣底價</span><span class="num">1,821</span><span class="u">萬</span></div>
+            <div class="sub">單價 26 萬/坪</div>
+          </div>
+        </div>
+        <div class="body">
+          <div class="tags"><span class="chip loc">台南市｜東區</span><span class="chip">透天</span><span class="chip">第一拍</span></div>
+          <div><div class="addr">東區中華東路透天厝</div><div class="comm">台南市東區中華東路…</div></div>
+          <div class="price-row"><span class="price">1,821<small> 萬</small></span><span class="unit">單價 26 萬/坪</span></div>
+          <div class="auction-row">開標 115/09/23 09:00</div>
+        </div>
+      </article>
+      <article class="card mapcase">
+        <div class="photo">
+          <img src="../w404/map.jpg" alt="燕巢區大成路透天厝（地圖）">
+          <div class="ovB">
+            <div class="l"><span class="lb">拍賣底價</span><span class="num">3,740</span><span class="u">萬</span></div>
+            <div class="sub">單價 54 萬/坪</div>
+          </div>
+        </div>
+        <div class="body">
+          <div class="addr">燕巢區大成路透天厝 <span class="mapflag">地圖底圖</span></div>
+          <div class="price-row"><span class="price">3,740<small> 萬</small></span><span class="unit">單價 54 萬/坪</span></div>
+        </div>
+      </article>
+    </div>
+    <ul class="pros">
+      <li class="y">字級最大（40px），滑動時最先被看到</li>
+      <li class="y">漸層是半透明，照片下緣仍看得見</li>
+      <li class="n">會蓋掉照片下方約三成畫面</li>
+    </ul>
+  </div>
+
+  <!-- 方案 C -->
+  <div class="opt">
+    <div class="hd">
+      <h3><span class="tag">方案 C</span>底部實色藍條</h3>
+      <p class="desc">品牌藍實色條＋金色數字。與網站主色一致，辨識度不受照片明暗影響。</p>
+    </div>
+    <div class="bd">
+      <article class="card">
+        <div class="photo">
+          <img src="../w400/photo.jpg" alt="學甲區信義路公寓">
+          <div class="ovC">
+            <span class="lb">底價</span>
+            <span><span class="num">132</span><span class="u">萬</span></span>
+            <span class="sub">14.6 萬/坪</span>
+          </div>
+        </div>
+        <div class="body">
+          <div class="tags"><span class="chip loc">台南市｜學甲區</span><span class="chip">公寓</span><span class="chip">第一拍</span></div>
+          <div><div class="addr">學甲區信義路公寓</div><div class="comm">台南市學甲區信義路…</div></div>
+          <div class="price-row"><span class="price">132<small> 萬</small></span><span class="unit">單價 14.6 萬/坪</span></div>
+          <div class="auction-row">開標 115/09/16 10:00</div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="photo">
+          <img src="../w405/photo.jpg" alt="東區中華東路透天厝">
+          <div class="ovC">
+            <span class="lb">底價</span>
+            <span><span class="num">1,821</span><span class="u">萬</span></span>
+            <span class="sub">26 萬/坪</span>
+          </div>
+        </div>
+        <div class="body">
+          <div class="tags"><span class="chip loc">台南市｜東區</span><span class="chip">透天</span><span class="chip">第一拍</span></div>
+          <div><div class="addr">東區中華東路透天厝</div><div class="comm">台南市東區中華東路…</div></div>
+          <div class="price-row"><span class="price">1,821<small> 萬</small></span><span class="unit">單價 26 萬/坪</span></div>
+          <div class="auction-row">開標 115/09/23 09:00</div>
+        </div>
+      </article>
+      <article class="card mapcase">
+        <div class="photo">
+          <img src="../w404/map.jpg" alt="燕巢區大成路透天厝（地圖）">
+          <div class="ovC">
+            <span class="lb">底價</span>
+            <span><span class="num">3,740</span><span class="u">萬</span></span>
+            <span class="sub">54 萬/坪</span>
+          </div>
+        </div>
+        <div class="body">
+          <div class="addr">燕巢區大成路透天厝 <span class="mapflag">地圖底圖</span></div>
+          <div class="price-row"><span class="price">3,740<small> 萬</small></span><span class="unit">單價 54 萬/坪</span></div>
+        </div>
+      </article>
+    </div>
+    <ul class="pros">
+      <li class="y">對比最強，任何照片都保證看得清楚</li>
+      <li class="y">與網站藍色主色系一致，最像「正式標價」</li>
+      <li class="n">實色條會硬切掉照片下緣</li>
+    </ul>
+  </div>
+
+</div>
+
+<!-- ==================== 物件頁大圖 ==================== -->
+<h2 class="sec">二、物件頁大圖<span class="n">wNNN/index.html — 慧瑜人像在左下，價格一律靠右避開</span></h2>
+<p class="lead">大圖空間充足，字級可以拉到 <b>60px 以上</b>。三個方案都已把價格靠右排，不會壓到左下角的人像。</p>
+
+<div class="stack">
+
+  <div>
+    <p class="label">方案 A <span>— 右下角價格牌（大圖版）</span></p>
+    <div class="hero">
+      <div class="bar">法拍女王 陳慧瑜｜專業代標．未得標免付費</div>
+      <div class="mid">
+        <img class="prop" src="../w410/photo.jpg" alt="新園鄉公正路透天厝">
+        <img class="queen" src="../104woo-assets/queen.png" alt="法拍女王 陳慧瑜">
+        <div class="ovA"><span class="lb">拍賣底價</span><span class="num">1,200</span><span class="u">萬</span></div>
+      </div>
+      <div class="hero-cta"><span>📞 0917-270-656</span><span class="line">💬 加 LINE 諮詢</span></div>
+    </div>
+  </div>
+
+  <div>
+    <p class="label">方案 B <span>— 底部漸層大字（大圖版）</span></p>
+    <div class="hero">
+      <div class="bar">法拍女王 陳慧瑜｜專業代標．未得標免付費</div>
+      <div class="mid">
+        <img class="prop" src="../w410/photo.jpg" alt="新園鄉公正路透天厝">
+        <img class="queen" src="../104woo-assets/queen.png" alt="法拍女王 陳慧瑜">
+        <div class="ovB">
+          <div class="l"><span class="lb">拍賣底價</span><span class="num">1,200</span><span class="u">萬</span></div>
+          <div class="sub">保證金約 240 萬</div>
+        </div>
+      </div>
+      <div class="hero-cta"><span>📞 0917-270-656</span><span class="line">💬 加 LINE 諮詢</span></div>
+    </div>
+  </div>
+
+  <div>
+    <p class="label">方案 C <span>— 底部實色藍條（大圖版，人像疊在條上）</span></p>
+    <div class="hero">
+      <div class="bar">法拍女王 陳慧瑜｜專業代標．未得標免付費</div>
+      <div class="mid">
+        <img class="prop" src="../w410/photo.jpg" alt="新園鄉公正路透天厝">
+        <img class="queen" src="../104woo-assets/queen.png" alt="法拍女王 陳慧瑜">
+        <div class="ovC">
+          <span class="lb">拍賣底價</span>
+          <span><span class="num">1,200</span><span class="u">萬</span></span>
+          <span class="sub">保證金約 240 萬</span>
+        </div>
+      </div>
+      <div class="hero-cta"><span>📞 0917-270-656</span><span class="line">💬 加 LINE 諮詢</span></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ==================== 手機 ==================== -->
+<h2 class="sec">三、手機寬度<span class="n">330px — 實際多數客戶看到的樣子</span></h2>
+<p class="lead">手機上卡片變窄，四位數金額最容易爆版。以下是三個方案在 330px 下的實際表現（用最長的 3,740 萬測試）。</p>
+
+<div class="phones">
+  <div class="phone">
+    <article class="card">
+      <div class="photo">
+        <img src="../w466/photo.jpg" alt="安南區安中路透天厝">
+        <div class="ovA"><span class="lb">拍賣底價</span><span class="num">3,740</span><span class="u">萬</span></div>
+      </div>
+      <div class="body">
+        <div class="addr">安南區安中路透天厝</div>
+        <div class="price-row"><span class="price">3,740<small> 萬</small></span></div>
+      </div>
+    </article>
+    <p class="cap">方案 A</p>
+  </div>
+  <div class="phone">
+    <article class="card">
+      <div class="photo">
+        <img src="../w466/photo.jpg" alt="安南區安中路透天厝">
+        <div class="ovB">
+          <div class="l"><span class="lb">拍賣底價</span><span class="num">3,740</span><span class="u">萬</span></div>
+          <div class="sub">9.8 萬/坪</div>
+        </div>
+      </div>
+      <div class="body">
+        <div class="addr">安南區安中路透天厝</div>
+        <div class="price-row"><span class="price">3,740<small> 萬</small></span></div>
+      </div>
+    </article>
+    <p class="cap">方案 B</p>
+  </div>
+  <div class="phone">
+    <article class="card">
+      <div class="photo">
+        <img src="../w466/photo.jpg" alt="安南區安中路透天厝">
+        <div class="ovC">
+          <span class="lb">底價</span>
+          <span><span class="num">3,740</span><span class="u">萬</span></span>
+          <span class="sub">9.8 萬/坪</span>
+        </div>
+      </div>
+      <div class="body">
+        <div class="addr">安南區安中路透天厝</div>
+        <div class="price-row"><span class="price">3,740<small> 萬</small></span></div>
+      </div>
+    </article>
+    <p class="cap">方案 C</p>
+  </div>
+</div>
+
+<!-- ==================== 決策 ==================== -->
+<h2 class="sec">四、需要你決定的四件事</h2>
+
+<div class="ask">
+  <h3>請回覆以下四點，我就直接動工</h3>
+  <ol>
+    <li><b>選哪個方案？</b>A（角落牌）／B（漸層大字）／C（實色藍條）
+      <span class="hint">單就「字體突出放大」這個要求，B 最符合；要最保險看得清楚選 C；要照片好看選 A。也可以混搭（卡片用 C、大圖用 B）。</span></li>
+    <li><b>疊字要出現在哪裡？</b>只有總覽卡片／只有物件頁大圖／兩邊都要
+      <span class="hint">建議兩邊都要，客戶點進去也持續看到價格。</span></li>
+    <li><b>除了底價，還要顯示什麼？</b>單價（萬/坪）／保證金／拍別（第一拍）／都不要，只留底價
+      <span class="hint">上面範本卡片配「單價」、大圖配「保證金」，可調整。</span></li>
+    <li><b>實作路線？</b>見下表 — 疊在網頁上（快、好改）／燒進圖片檔（分享縮圖也看得到）／兩個都做</li>
+  </ol>
+
+  <table class="rt">
+    <tr><th></th><th>路線 1：網頁疊字（CSS）</th><th>路線 2：燒進 photo.jpg</th></tr>
+    <tr><th>做法</th><td>改 104woo.html 卡片樣式 ＋ 348 張物件頁</td><td>用 Python（Pillow）把價格畫進圖片檔重存</td></tr>
+    <tr><th>生效範圍</th><td>網頁上看得到</td><td>網頁 ＋ <b>LINE／FB 分享縮圖也看得到</b></td></tr>
+    <tr><th>改樣式</th><td>改一次 CSS，全部立即更新</td><td>要重跑全部圖片重新產生</td></tr>
+    <tr><th>底價變動時</th><td>資料改了就自動跟著變</td><td>要重新生成該張圖</td></tr>
+    <tr><th>倉庫容量</th><td>不增加</td><td>圖片重存，倉庫會變大</td></tr>
+    <tr><th>作業時間</th><td>約 20–30 分鐘</td><td>約 1 小時（348 張批次處理）</td></tr>
+  </table>
+  <p class="hint" style="margin-top:12px">※ 目前 <code>og:image</code> 指向原始 <code>photo.jpg</code>，所以分享到 LINE 的預覽圖<b>看不到價格</b>。若在意分享效果，建議「兩個都做」。</p>
+</div>
+
+<footer class="f">
+  範本檔：<code>output/price-overlay-preview.html</code>　｜　示範物件：w400（132 萬）、w405（1,821 萬）、w404（3,740 萬・地圖底圖）、w410（1,200 萬）、w466<br>
+  本頁僅為樣式預覽，尚未修改任何正式檔案。
+</footer>
+
+</div>
+</body>
+</html>

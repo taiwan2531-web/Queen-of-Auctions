@@ -38,8 +38,12 @@ __pycache__/
 .env.local
 
 # 輸出資料夾（勿追蹤生成檔案）
-output/
+# 用 output/* 而非 output/：git 不會進入被排除的「目錄」，
+# 寫成 output/ 的話下面那條 ! 例外規則不會生效
+output/*
 dist/
+# 例外：燒價圖的樣式決策範本，是 burn_price.ps1 現行版面的由來，值得留存
+!output/price-overlay-preview.html
 
 # 音聲克隆臨時檔
 *.wav
