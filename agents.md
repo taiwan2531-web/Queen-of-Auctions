@@ -46,6 +46,7 @@ Queen-of-Auctions/
 ├── CLAUDE.md                操作手冊（產線順序、去重規則、生命週期）
 ├── CONTEXT.md               領域模型／共同詞彙
 ├── agents.md / handoff.md   專案藍圖與交接檔（本檔）
+├── docs/新電腦設定.md       換機重建步驟（venv、GPU、路徑寫死之處）
 ├── 104woo-assets/           共用資源
 │   ├── delist.js            下架判定唯一真理源
 │   ├── swipe-nav.js         手機滑動切換（全部物件頁共用）
