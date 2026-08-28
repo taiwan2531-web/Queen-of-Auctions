@@ -72,6 +72,11 @@ python apply_swipe_nav.py
 - **`.gitignore` 的 `output/` 已改寫為 `output/*`**。git 不會進入被排除的「目錄」，
   寫成 `output/` 時 `!output/xxx` 例外規則不會生效。
 - **只能有一份 clone**。2026-08-22 前有兩份，導致其中一份落後 61 個 commit 沒人發現。
+- **在 G: 上「腳本改檔 → 立刻 `git add`」時，不能假設 git 抓得到。**
+  G: 是 Google Drive 虛擬磁碟，檔案寫入後的可見性偶有延遲——2026-08-28 就發生過
+  Python 腳本已改好 4 個檔，緊接著的 `git add -A` 只看到 2 個，commit 靜靜地漏掉另外兩個。
+  **commit 後養成用 `git show --stat HEAD` 核對檔案數的習慣**，或改檔與 add 之間隔開一步。
+  產線步驟因為有筆數可核對，漏了會發現；純文件編輯沒有那種天然檢核點，特別危險。
 - 驗證 tinyurl 時，**別用 Python 在 Windows 寫出的清單直接餵 curl**——
   預設換行是 `\r\n`，尾端的 `\r` 會讓每一筆請求失敗，看起來像連結全壞（8/28 踩過，先 `tr -d '\r'`）。
 
