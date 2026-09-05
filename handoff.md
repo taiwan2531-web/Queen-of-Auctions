@@ -47,7 +47,8 @@ skill `auction-publish` 仍在，但改成**手動路徑**——你在場說「�
 ## 💻 換電腦？
 
 看 [docs/新電腦設定.md](docs/新電腦設定.md)——venv 怎麼建、GPU 要什麼版本的 torch、
-哪幾處路徑寫死了。全域設定與排程走 `D:\ganju-erp` 的 `pnpm agent:restore`。
+哪幾處路徑寫死了。全域設定走 `法拍 104` repo 的 `backup_agent_config.ps1 -Restore`
+（2026-09-06 起；原本的 `D:\ganju-erp` 已不存在）。上架排程是 Windows 工作排程器，要另外重建。
 
 ## 🛠️ 產線指令（照這個順序，不要跳）
 
