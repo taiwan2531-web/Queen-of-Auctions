@@ -14,17 +14,25 @@
 - 目前**在架 352 筆**（其餘 89 筆已過開標時刻，被 `delist.js` 隱藏，屬正常）。
 - 工作區乾淨，與 `origin/main` 同步。沒有做一半的東西。
 
-## 🤖 上架已排程自動執行（2026-08-28 起）
+## 🤖 上架已排程自動執行（2026-09-05 起改用腳本）
 
-**每週三、週六 09:07** 自動跑完整產線並推上線，不需要人介入。
+**Windows 工作排程器 `QueenOfAuctions-Publish`｜每週三、六 09:07｜跑 `run_pipeline.ps1`**
 
-- 產線步驟寫在 skill `auction-publish`（`C:\Users\ken\.claude\skills\auction-publish\SKILL.md`）
-- 排程任務 `auction-publish-wed-sat`（`C:\Users\ken\.claude\scheduled-tasks\`）
-- **護欄**：爬蟲總筆數 < 800、新物件 > 200、更新 > 200，任一觸發就中止不推，並回報
-- 工作區不乾淨時會停下來問人，不會自行 commit 或丟棄你做到一半的東西
-- **前提：電腦要開著且 Claude Code 有開**。關著的話會在下次啟動時補跑
-- ⚠️ skill 與排程都放在 `C:\Users\ken\.claude\`，**不在任何 repo 裡**，
-  換電腦不會跟著走。備份走 `D:\ganju-erp` 的 `pnpm agent:backup`
+- 護欄：爬蟲 < 800、新物件 > 200、更新 > 200，任一觸發就中止不推
+- 工作區不乾淨直接中止（exit 3），**不會自行 commit 或丟棄你做到一半的東西**
+- 實際筆數與 dry-run 不符也中止
+- 退出碼：0 成功或無異動｜1 護欄觸發｜2 執行失敗｜3 工作區不乾淨
+- log 在 `output\pipeline-logs\<時間戳>.log`（gitignore，不進版控）
+- 手動跑：`powershell -ExecutionPolicy Bypass -File run_pipeline.ps1`
+  加 `-DryRun` 只看統計不寫入、`-SkipCrawl` 沿用最新爬蟲檔（省 25 分）、`-NoPush` 只 commit
+
+> **為什麼不用 Claude Code 排程**：2026-08-29、09-02、09-05 連續三次都在第 3 個指令
+> `git pull` 就停住，13 秒內結束、什麼都沒做——每個會寫入或連外的指令都會攔一次權限
+> 確認，排程執行時沒有人可以按。加 `permissions.allow` 沒解決（指令是
+> `cd "..." && git pull ...` 這種複合形狀，前綴比對打不中）。
+> 這條產線每一步都是固定順序與參數、護欄是三個數字比較，**根本不需要 LLM**。
+
+skill `auction-publish` 仍在，但改成**手動路徑**——你在場說「爬蟲上架」時用。
 
 ## ➡️ 下一步
 
@@ -82,6 +90,6 @@ python apply_swipe_nav.py
 
 ## 🕐 最後更新
 
-- 時間：2026-08-28 12:35
+- 時間：2026-09-06 00:15
 - 更新者：Claude Code (Opus 5) @ KEN-PC
 - Git push：✅ 已推

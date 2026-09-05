@@ -33,8 +33,10 @@
 - [x] ~~流標重新排拍不再換短網址~~ → `publish_new.py` 同案號就地更新＋保留期 30 天（2026-08-22）
 - [x] ~~驗證「有新物件＋有更新」混合情境~~ → 2026-08-28 以 56 新 ＋ 55 更新驗收，
       55 筆更新的 tinyurl 55/55 仍指向原代號、目的地頁面 55/55 回傳 200
-- [x] ~~上架產線自動化~~ → skill `auction-publish` ＋ 排程 `auction-publish-wed-sat`
-      （每週三、六 09:07，含護欄；2026-08-28）
+- [x] ~~上架產線自動化~~ → `run_pipeline.ps1` ＋ Windows 工作排程器
+      `QueenOfAuctions-Publish`（每週三、六 09:07，含護欄；2026-09-05）
+      skill `auction-publish` 保留為手動路徑。曾試過 Claude Code 排程，
+      連續三次卡在權限確認什麼都沒做，改為純腳本後沒有權限層
 - [ ] 架構報告候選 B：頁面模板單一真理源（`build_page` 目前仍以某張物件頁為母版做字串替換）
 
 ## 資料夾結構
@@ -61,6 +63,7 @@ Queen-of-Auctions/
 ├── voices/法拍女王 陳慧瑜/   參考音色（音色的唯一真理源）
 ├── obsidian/工作記錄.md      L3 詳細紀錄
 ├── output/                  生成檔（.gitignore；僅 price-overlay-preview.html 例外保存）
+├── run_pipeline.ps1         無人值守產線總控（工作排程器每週三、六 09:07 跑）
 ├── *.py / *.ps1             產線腳本（見 CLAUDE.md 的執行順序）
 └── 3kagzo/ k2rojm/ ...      舊 hash 代號物件頁封存（12 個，不依賴 delist.js）
 ```
