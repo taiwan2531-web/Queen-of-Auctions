@@ -176,7 +176,8 @@ feat(items): 上架 $nAdd 筆新物件、就地更新 $nUpd 筆（自動排程�
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 "@
 $msgFile = Join-Path $LOG_DIR "$stamp.commitmsg.txt"
-Set-Content -Path $msgFile -Value $msg -Encoding utf8
+# 不用 Set-Content -Encoding utf8：PowerShell 5.1 會寫入 BOM，commit 標題開頭就多一個看不見的字元
+[IO.File]::WriteAllText($msgFile, $msg, (New-Object Text.UTF8Encoding $false))
 & git -C $SITE_REPO commit -q -F $msgFile
 NeedOk 'git commit'
 Say ("   " + (& git -C $SITE_REPO log -1 --format='%h %s'))
