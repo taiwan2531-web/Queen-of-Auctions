@@ -55,7 +55,7 @@ Queen-of-Auctions/
 │   ├── queen.png            人像（每一張物件頁都引用）
 │   ├── 白底.jpg             queen.png 的去背來源
 │   └── S__21946379.jpg      品牌宣傳圖
-├── wNNN/                    物件（441 筆，2026-08-28 現況；最新代號 w822）
+├── wNNN/                    物件（526 筆，2026-09-17 現況；最新代號 w907）
 │   ├── index.html           物件頁（含 narrText 講稿）
 │   ├── photo.jpg / map.jpg  原始底圖（約 22% 無實景照，改用地圖）
 │   ├── card.jpg / hero.jpg  燒價圖（由 burn_price.ps1 生成）
@@ -63,7 +63,8 @@ Queen-of-Auctions/
 ├── voices/法拍女王 陳慧瑜/   參考音色（音色的唯一真理源）
 ├── obsidian/工作記錄.md      L3 詳細紀錄
 ├── output/                  生成檔（.gitignore；僅 price-overlay-preview.html 例外保存）
-├── run_pipeline.ps1         無人值守產線總控（工作排程器每週三、六 09:07 跑）
+├── run_pipeline.ps1         無人值守產線總控
+├── launch_pipeline.ps1      排程啟動器正本（複本在 C:，等 G: 就緒、擋假成功；每週三、六 09:07）
 ├── *.py / *.ps1             產線腳本（見 CLAUDE.md 的執行順序）
 └── 3kagzo/ k2rojm/ ...      舊 hash 代號物件頁封存（12 個，不依賴 delist.js）
 ```
