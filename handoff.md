@@ -20,7 +20,7 @@
 ## 🤖 自動上架
 
 **Windows 工作排程器 `QueenOfAuctions-Publish`｜每週三、六 09:07**
-→ `%LOCALAPPDATA%\QueenOfAuctions\launch_pipeline.ps1`（C:，本機）
+→ `C:\Users\ken\Scripts\QueenOfAuctions\launch_pipeline.ps1`（C:，本機）
 → `run_pipeline.ps1`（G:，repo 內）
 
 - 只在**你登入時**執行；09:07 沒登入的話，登入後補跑
@@ -58,13 +58,17 @@ log 裡的中文會疊字（「爬爬蟲蟲」），是轉譯的編碼疊加，*
 | 9/12 | exit 2 | 新增 22（w886–w907）、更新 36；同上 |
 | 9/16 | **假成功** | 回報 0，實際沒跑（登入 5 分鐘後補跑，G: 未就緒）→ 促成啟動器 |
 | 9/17（手動，經啟動器） | 成功 | 補齊 10 筆，tinyurl 10/10 |
+| 9/19 | **啟動失敗** | `0x8007010B`；啟動器裝在 `%LOCALAPPDATA%`，排程執行不了，沒有 log |
 
 ## ➡️ 下一步
 
-1. **9/19（六）09:07** 是啟動器第一次由排程觸發，跑完查 `LastTaskResult`，應為 0。
-2. **清除過期物件**：`python purge_expired.py --dry-run` → 確認後 `--push`。
-   9/17 01:21 跑過是 0 筆，`w433` 的到期時刻在 9/17 稍晚。**排程不會自動清除**，要人確認。
-3. （可選）架構候選 B：頁面模板單一真理源，見 `agents.md` 路線圖。
+1. **9/23（三）09:07** 是啟動器搬到 `C:\Users\ken\Scripts\` 後第一次由排程觸發，
+   跑完查 `LastTaskResult`，應為 0（9/19 那次因為裝在 AppData 而啟動失敗，已修）。
+2. **9/12 之後沒有再跑過爬蟲**（9/16 假成功、9/19 啟動失敗），到 9/20 已隔 8 天。
+   要補跑：`powershell -ExecutionPolicy Bypass -File run_pipeline.ps1`，或等 9/23 排程。
+3. **清除過期物件**：`python purge_expired.py --dry-run` → 確認後 `--push`。
+   9/17 01:21 跑過是 0 筆，`w433` 已於 9/17 稍晚到期。**排程不會自動清除**，要人確認。
+4. （可選）架構候選 B：頁面模板單一真理源，見 `agents.md` 路線圖。
 
 ## 💻 換電腦？
 
@@ -91,7 +95,10 @@ python apply_swipe_nav.py
 
 ## ⚠️ 注意事項
 
-- **改了 repo 裡的 `launch_pipeline.ps1`，要重新複製到 `%LOCALAPPDATA%\QueenOfAuctions\`**，排程跑的是 C: 上的複本。
+- **改了 repo 裡的 `launch_pipeline.ps1`，要重新複製到 `C:\Users\ken\Scripts\QueenOfAuctions\`**，排程跑的是 C: 上的複本。
+- 🔴 **啟動器不能放 `%LOCALAPPDATA%`**。2026-09-19 排程失敗（`0x8007010B`）就是這個原因——
+  工作排程器執行不了 AppData 底下的腳本，完全不會留下 log。搬到 `C:\Users\ken\Scripts\` 後實測正常。
+  （啟動器的 log 仍寫在 `%LOCALAPPDATA%\QueenOfAuctions\launcher-logs`，寫檔沒問題，不能執行的只有腳本。）
 - **`publish_new.py` 不在本 repo**，在 `G:\我的雲端硬碟\ai agent\法拍 104\`，
   其 `REPO` 常數**寫死指向本資料夾**。搬動或改名本資料夾時必須同步修改。
 - **保留期與就地更新必須成套**。若把保留期改回 7 天又用 `--no-update`，
@@ -110,6 +117,6 @@ python apply_swipe_nav.py
 
 ## 🕐 最後更新
 
-- 時間：2026-09-17 01:25
+- 時間：2026-09-20 08:15
 - 更新者：Claude Code (Opus 5) @ KEN-PC
 - Git push：✅ 已推
