@@ -44,6 +44,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--days", type=int, default=30, help="下架後保留天數（預設 30）")
 ap.add_argument("--dry-run", action="store_true", help="只列出不刪除")
 ap.add_argument("--push", action="store_true", help="刪除後 push 到 GitHub")
+ap.add_argument("--stats-out", help="把統計寫成 JSON（給自動化腳本判斷，不必解析中文輸出）")
 args = ap.parse_args()
 
 
@@ -83,7 +84,17 @@ for i in items:
         keep.append(i)
 
 print(f"現在 {now:%Y-%m-%d %H:%M}｜保留期 {args.days} 天")
+
+
+def write_stats(**kw):
+    if not args.stats_out:
+        return
+    with open(args.stats_out, "w", encoding="utf-8") as f:
+        json.dump(kw, f, ensure_ascii=False, indent=2)
+
 print(f"總物件 {len(items)}｜保留 {len(keep)}｜應刪除 {len(purge_codes)}")
+write_stats(purge=len(purge_codes), kept=len(keep), total=len(items),
+            dry_run=args.dry_run, done=False)
 if not purge_codes:
     print("沒有需要刪除的物件。")
     sys.exit(0)
@@ -149,17 +160,27 @@ r = git("commit", "-m",
         f"總覽 {len(items)} → {len(keep)} 筆，並修補相鄰物件導覽鏈。")
 print(r.stdout.strip()[:200] if r.returncode == 0 else "（無變更或 commit 失敗）")
 
-for _ in range(5):
-    time.sleep(3)
+# 重試到「HEAD 版筆數正確且工作區乾淨」為止，最多 60 秒。
+# 固定重試次數不夠：2026-10-26 清 61 筆時，104woo.html 延遲到第 2 次之後才可見，
+# 迴圈已因為「這次沒東西可 stage」而提早結束，commit 裡仍是舊的 587 筆。
+def head_count():
+    return len(set(re.findall(r'"code":"(w' + r'\d+)"', git('show', 'HEAD:104woo.html').stdout)))
+
+
+deadline = time.time() + 60
+while True:
     stage_all()
-    if git("diff", "--cached", "--quiet").returncode == 0:
-        break                      # 沒有新東西了
-    git("commit", "--amend", "--no-edit")
-    print("  ↳ 補上延遲才可見的檔案")
+    if git('diff', '--cached', '--quiet').returncode != 0:
+        git('commit', '--amend', '--no-edit')
+        print('  ↳ 補上延遲才可見的檔案')
+    if head_count() == len(keep) and not git('status', '--porcelain').stdout.strip():
+        break
+    if time.time() > deadline:
+        break
+    time.sleep(3)
 
 # 核對：commit 裡的 BASE_ITEMS 筆數要等於保留筆數，否則線上會對不上資料夾
-head_html = git("show", "HEAD:104woo.html").stdout
-in_head = len(set(re.findall(r'"code":"(w\d+)"', head_html)))
+in_head = head_count()
 left = git("status", "--porcelain").stdout.strip()
 if in_head != len(keep) or left:
     print("")
@@ -171,6 +192,8 @@ if in_head != len(keep) or left:
     print("   ⚠ 不推送，請人工確認後再處理。")
     sys.exit(2)
 print(f"核對通過：HEAD 版 BASE_ITEMS {in_head} 筆、工作區乾淨")
+write_stats(purge=len(purge_codes), kept=len(keep), total=len(items),
+            dry_run=False, done=True, deleted=purge_codes)
 
 if args.push:
     p = git("push", "origin", "main")

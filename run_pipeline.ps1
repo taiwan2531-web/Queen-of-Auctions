@@ -60,6 +60,7 @@ $STATS   = Join-Path $LOG_DIR "$stamp.stats.json"
 $MIN_CRAWL   = 800    # 正常 1300~1450 筆。太少代表網站改版或網路異常，資料不可信
 $MAX_NEW     = 200    # 正常一批 50~180 筆。暴增通常是案號比對壞了
 $MAX_UPDATES = 200
+$MAX_PURGE   = 300    # 單次清除上限。正常一次 60~130 筆；暴增代表下架判定出問題
 
 Start-Transcript -Path $LOG -Force | Out-Null
 
@@ -72,6 +73,24 @@ function Die([string]$m, [int]$code) {
   exit $code
 }
 function NeedOk([string]$what) { if ($LASTEXITCODE -ne 0) { Die "$what 失敗（exit $LASTEXITCODE）" 2 } }
+
+# ---------- 清除下架滿 30 天的物件 ----------
+# 排在最後：上架失敗就不會連帶清除。無異動時也要跑，否則過期物件永遠不會被清。
+$script:nPurge = 0
+function Invoke-Purge {
+  Say '清除過期物件'
+  $pstats = Join-Path $LOG_DIR "$stamp.purge.json"
+  & $PY_CRAWL (Join-Path $SITE_REPO 'purge_expired.py') --dry-run --stats-out $pstats | Out-Null
+  if ($LASTEXITCODE -ne 0) { Die "purge dry-run 失敗（exit $LASTEXITCODE）" 2 }
+  $ps = Get-Content $pstats -Raw -Encoding UTF8 | ConvertFrom-Json
+  $script:nPurge = [int]$ps.purge
+  if ($script:nPurge -eq 0) { Say "   沒有需要清除的物件"; return }
+  if ($script:nPurge -gt $MAX_PURGE) { Die "待清除 $($script:nPurge) 筆超過門檻 $MAX_PURGE——疑似下架判定出問題，不清除" 1 }
+  Say "   清除 $($script:nPurge) 筆（保留 $($ps.kept) 筆）"
+  $pushArg = if ($NoPush) { @() } else { @("--push") }
+  & $PY_CRAWL (Join-Path $SITE_REPO 'purge_expired.py') --stats-out $pstats @pushArg
+  NeedOk "purge_expired"
+}
 
 Say "===== 法拍上架產線開始（log: $LOG）====="
 
@@ -120,7 +139,8 @@ if ($s.new     -gt $MAX_NEW)     { Die "新物件 $($s.new) 筆超過門檻 $MAX
 if ($s.updates -gt $MAX_UPDATES) { Die "更新 $($s.updates) 筆超過門檻 $MAX_UPDATES——疑似案號比對壞掉" 1 }
 
 if ($s.new -eq 0 -and $s.updates -eq 0) {
-  Say '✅ 無異動（新物件 0 筆、更新 0 筆），結束。'
+  Say '✅ 無異動（新物件 0 筆、更新 0 筆）'
+  Invoke-Purge
   Stop-Transcript | Out-Null
   exit 0
 }
@@ -214,6 +234,7 @@ if ($missing.Count -gt 0) {
   Die "有 $($missing.Count) 個檔案沒生成" 2
 }
 
-Say "===== 完成：新增 $nAdd 筆、更新 $nUpd 筆 ====="
+Invoke-Purge
+Say "===== 完成：新增 $nAdd 筆、更新 $nUpd 筆、清除 $script:nPurge 筆 ====="
 Stop-Transcript | Out-Null
 exit 0
