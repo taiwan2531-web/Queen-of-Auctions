@@ -30,6 +30,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 
 sys.stdout.reconfigure(encoding="utf-8")
@@ -131,14 +132,45 @@ open(HTML, "w", encoding="utf-8").write(html[:m.start(1)] + new_json + html[m.en
 print(f"\n已刪除資料夾 {removed} 個｜修補導覽 {patched} 頁｜BASE_ITEMS {len(items)} → {len(keep)}")
 
 # 4) commit
-git("add", "-A", "--", "104woo.html", *[c for c in purge_codes])
-for it in kept_sorted:
-    git("add", "--", f"{it['code']}/index.html")
+#    ⚠ repo 在 Google Drive 上，剛寫入的檔案不保證立刻被 git 看到。
+#      2026-10-13 就發生過：122 個資料夾刪除進了 commit，但 104woo.html 與
+#      124 頁導覽修補沒進去，線上 BASE_ITEMS 一度指向已刪除的物件。
+#      所以 commit 後要再 stage 幾次，有東西才補進同一個 commit。
+def stage_all():
+    git("add", "-A", "--", "104woo.html", *[c for c in purge_codes])
+    for it in kept_sorted:
+        git("add", "--", f"{it['code']}/index.html")
+
+
+stage_all()
 r = git("commit", "-m",
         f"chore: 清除下架滿 {args.days} 天的物件（{len(purge_codes)} 筆：{purge_codes[0]}–{purge_codes[-1]}）\n\n"
         f"依 delist.js 規則（開標+3h 下架）再滿 {args.days} 天即刪除；"
         f"總覽 {len(items)} → {len(keep)} 筆，並修補相鄰物件導覽鏈。")
 print(r.stdout.strip()[:200] if r.returncode == 0 else "（無變更或 commit 失敗）")
+
+for _ in range(5):
+    time.sleep(3)
+    stage_all()
+    if git("diff", "--cached", "--quiet").returncode == 0:
+        break                      # 沒有新東西了
+    git("commit", "--amend", "--no-edit")
+    print("  ↳ 補上延遲才可見的檔案")
+
+# 核對：commit 裡的 BASE_ITEMS 筆數要等於保留筆數，否則線上會對不上資料夾
+head_html = git("show", "HEAD:104woo.html").stdout
+in_head = len(set(re.findall(r'"code":"(w\d+)"', head_html)))
+left = git("status", "--porcelain").stdout.strip()
+if in_head != len(keep) or left:
+    print("")
+    print(f"❌ commit 內容與預期不符：HEAD 版 BASE_ITEMS {in_head} 筆、應為 {len(keep)} 筆")
+    if left:
+        print("   仍有未 commit 的變動：")
+        for ln in left.splitlines()[:10]:
+            print("    ", ln)
+    print("   ⚠ 不推送，請人工確認後再處理。")
+    sys.exit(2)
+print(f"核對通過：HEAD 版 BASE_ITEMS {in_head} 筆、工作區乾淨")
 
 if args.push:
     p = git("push", "origin", "main")
