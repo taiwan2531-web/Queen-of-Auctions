@@ -100,7 +100,46 @@ $dirty = & git -C $SITE_REPO status --porcelain
 if ($dirty) {
   Say '工作區有未 commit 的變動：'
   $dirty | ForEach-Object { Say "    $_" }
-  Die '工作區不乾淨。那可能是你做到一半的東西，腳本不會自行 commit 或丟棄' 3
+
+  # 自我修復：只收拾「已追蹤的產線產物被修改」這一種。
+  # 2026-10-26 的 w629/index.html 就是這種——purge 寫好的導覽修補因 Google Drive
+  # 可見性延遲沒進 commit，工作區從此不乾淨，之後四次排程全部 exit 3、13 天無聲空轉。
+  #
+  # 刻意不收拾的情況，因為它們代表「有人做到一半」或「上架被中斷」：
+  #   ?? wNNN/        中斷的上架留下的孤兒資料夾；自動 commit 會讓 BASE_ITEMS 與資料夾不一致
+  #   M  *.py / *.ps1 / *.md   有人在改程式或文件
+  $own = '^(104woo\.html|w\d+/index\.html)$'
+  $unsafe = @()
+  foreach ($ln in $dirty) {
+    $code = $ln.Substring(0, 2)
+    $path = $ln.Substring(3).Trim().Trim('"')
+    if ($code -ne ' M' -or $path -notmatch $own) { $unsafe += $ln }
+  }
+  if ($unsafe.Count -gt 0) {
+    Say '   其中這些不是產線產物，不自動處理：'
+    $unsafe | ForEach-Object { Say "     $_" }
+    Die '工作區不乾淨。那可能是你做到一半的東西，腳本不會自行 commit 或丟棄' 3
+  }
+
+  Say '   全部是產線產物（已追蹤檔案被修改），自動收拾後繼續'
+  & git -C $SITE_REPO add -A
+  NeedOk 'git add（自我修復）'
+  $rmsg = Join-Path $LOG_DIR "$stamp.repair.txt"
+  [IO.File]::WriteAllText($rmsg, @"
+chore: 自動收拾產線殘留（$($dirty.Count) 個檔案）
+
+上一次執行寫出的產線產物沒進 commit，工作區因此不乾淨。
+repo 在 Google Drive 上，剛寫入的檔案不保證立刻被 git 看到——
+2026-10-26 的 w629/index.html 就是這樣，害後續四次排程連續 exit 3、13 天沒有更新。
+
+只有「已追蹤的 104woo.html 或 wNNN/index.html 被修改」會自動收拾；
+未追蹤的新資料夾（可能是中斷的上架）仍然會讓產線停下來等人處理。
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+"@, (New-Object Text.UTF8Encoding $false))
+  & git -C $SITE_REPO commit -q -F $rmsg
+  NeedOk 'git commit（自我修復）'
+  Say ("   " + (& git -C $SITE_REPO log -1 --format='%h %s'))
 }
 & git -C $SITE_REPO pull --ff-only origin main
 NeedOk 'git pull'

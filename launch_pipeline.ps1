@@ -46,6 +46,40 @@ function L([string]$m) {
   Write-Host $line
 }
 
+function Notify([string]$title, [string]$body) {
+  # 失敗必須看得見。13 天無聲空轉就是因為退出碼只存在工作排程器裡，沒有人會去看。
+  # 用內建的 NotifyIcon 汽球提示，不依賴任何額外模組。
+  try {
+    Add-Type -AssemblyName System.Windows.Forms -ErrorAction Stop
+    $ni = New-Object System.Windows.Forms.NotifyIcon
+    $ni.Icon = [System.Drawing.SystemIcons]::Warning
+    $ni.Visible = $true
+    $ni.ShowBalloonTip(20000, $title, $body, [System.Windows.Forms.ToolTipIcon]::Warning)
+    Start-Sleep -Seconds 12
+    $ni.Dispose()
+  } catch {
+    L "（通知顯示失敗：$($_.Exception.Message)）"
+  }
+}
+
+function Finish([int]$code, [string]$note) {
+  $txt = "{0}  exit={1}  {2}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $code, $note
+  [IO.File]::WriteAllText((Join-Path $LOCAL 'LAST-RESULT.txt'), $txt, (New-Object Text.UTF8Encoding $false))
+  if ($code -ne 0) {
+    $why = switch ($code) {
+      1 { '護欄觸發（筆數異常）' }
+      2 { '執行失敗' }
+      3 { '工作區不乾淨，需要人處理' }
+      4 { '假成功：回報 0 但沒有 log' }
+      5 { '等不到 G: 上的腳本' }
+      default { "未知退出碼 $code" }
+    }
+    L "❌ $why"
+    Notify '法拍上架產線失敗' "$why`n退出碼 $code`n紀錄：$LLOG"
+  }
+  exit $code
+}
+
 L "啟動器開始｜目標 $PipelineScript｜最多等 $WaitMinutes 分鐘"
 
 # ---------- 1. 等 G: 上的腳本讀得到完整內容 ----------
@@ -70,7 +104,7 @@ while ($true) {
 }
 if (-not $ready) {
   L "❌ 等了 $WaitMinutes 分鐘仍讀不到完整腳本，放棄（exit 5）"
-  exit 5
+  Finish 5 '等不到 G: 上的腳本'
 }
 L "腳本就緒（$($txt.Length) 字元）"
 
@@ -101,11 +135,11 @@ for ($i = 0; $i -lt 12 -and -not $newLog; $i++) {
 if (-not $newLog) {
   if ($rc -eq 0) {
     L '❌ 產線回報 0，但沒有產生任何 log——假成功（exit 4）'
-    exit 4
+    Finish 4 '假成功'
   }
   L "⚠ 沒有找到 log，沿用產線退出碼 $rc"
-  exit $rc
+  Finish $rc '沒有產生 log'
 }
 
 L "產線 log：$($newLog.FullName)"
-exit $rc
+Finish $rc $newLog.Name
