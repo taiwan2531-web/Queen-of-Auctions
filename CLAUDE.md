@@ -193,7 +193,13 @@ Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Select ProcessId, Co
 而磁碟上的檔案跟 HEAD 其實不一樣**。後果是工作區從此永遠不乾淨、
 四次排程連續 exit 3、**13 天無聲空轉**。
 
-成因推定為 `core.fsmonitor`（已於 2026-11-09 unset；G: 是 Google Drive 的虛擬檔案系統，
+🔴 **根因已於 2026-11-09 用對照實驗確認：`core.fsmonitor` × Google Drive 的組合。**
+每組 1440 次檢查——G: 上 fsmonitor 開著時「已追蹤檔案被修改」**100% 看不到**（720/720），
+關掉後 0 次；同一實驗在 C:（NTFS）開關都是 0 次。
+**而且只漏已追蹤被修改的檔案，未追蹤的新檔案一次都沒漏**——與四次事故形狀完全一致。
+已 unset，並在產線第 0 步加防呆（被打開就自動關掉）。**不需要把 repo 搬離 Google Drive。**
+
+（G: 是 Google Drive 的虛擬檔案系統，
 不保證把變更通知送齊，git 會信任快取）。要驗「檔案是否真的進了 commit」，
 拿 `git hash-object` 重算磁碟內容的 oid，跟 `git ls-tree -r HEAD` 比對——
 `purge_expired.py` 的 `differs_from_head()` 是現成的寫法，548 個檔約 4.2 秒。
