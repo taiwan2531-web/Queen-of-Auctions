@@ -1,11 +1,11 @@
 name: Generate Clone Voice
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - '**/index.html'
+  # 2026-11-09 移除 push 觸發。本機 GPU 一筆約 32 秒，雲端 CPU 一筆約 20 分鐘，
+  # 兩邊會搶同一批缺語音的物件：這天上架 98 筆後，本 workflow 被 push 叫起來
+  # 跑了 4 小時 43 分、生成 14 筆並逐筆以 API 推上去（w1000–w1021），
+  # 本機批次同時也生成了同樣那 14 筆，造成 14 個二進位檔衝突要人工收。
+  # 雲端保留作「沒有 NVIDIA 顯卡」時的後路，但只能手動觸發。
   workflow_dispatch: {}
 
 jobs:
