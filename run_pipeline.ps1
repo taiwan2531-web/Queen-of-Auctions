@@ -211,12 +211,41 @@ if ($dirty) {
   # 🔴 未追蹤的 '??' 一律不收。那代表中斷的上架留下孤兒資料夾，
   #    自動 commit 會讓 BASE_ITEMS 與資料夾不一致（2026-09-20 有過 35 個）。
   $okCodes = @(' M', 'M ', 'MM', ' D', 'D ')
+
+  function Test-OverviewIsPipelineOnly {
+    # 104woo.html 只有 `const BASE_ITEMS = ` 那一行是產線生成的
+    # （publish_new.py 只替換那段 JSON），其餘版面／CSS／JS 都是手工維護。
+    # 所以不能跟 wNNN/* 一樣無條件放行——改了版面沒 commit 的話，
+    # 自癒會把它推上線，而且產線不會蓋掉它，是真的生效。
+    $d = & git -C $SITE_REPO diff HEAD -- '104woo.html'
+    $other = @($d | Where-Object {
+      ($_ -match '^[+-]') -and
+      ($_ -notmatch '^(\+\+\+|---)') -and
+      ($_ -notmatch '^[+-]const BASE_ITEMS = ')
+    })
+    return , $other
+  }
+
   $unsafe = @()
   foreach ($ln in $dirty) {
     if ($ln.Length -lt 4) { $unsafe += $ln; continue }
     $code = $ln.Substring(0, 2)
     $path = $ln.Substring(3).Trim().Trim('"')
-    if ($okCodes -notcontains $code -or $path -notmatch $own) { $unsafe += $ln }
+    if ($okCodes -notcontains $code -or $path -notmatch $own) { $unsafe += $ln; continue }
+
+    if ($path -eq '104woo.html') {
+      # 刪掉總覽頁絕不是產線行為——真讓它自動 commit，整個網站會空掉
+      if ($code -eq ' D' -or $code -eq 'D ') {
+        Say '   104woo.html 被刪除——這絕不是產線行為'
+        $unsafe += $ln; continue
+      }
+      $other = Test-OverviewIsPipelineOnly
+      if ($other.Count -gt 0) {
+        Say "   104woo.html 的改動不只 BASE_ITEMS（另有 $($other.Count) 行），像是有人在改版面："
+        $other | Select-Object -First 6 | ForEach-Object { Say "       $_" }
+        $unsafe += $ln; continue
+      }
+    }
   }
   if ($unsafe.Count -gt 0) {
     Say '   其中這些不是產線產物，不自動處理：'

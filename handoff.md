@@ -313,6 +313,22 @@ python apply_swipe_nav.py
 
 ## ⚠️ 注意事項
 
+- 🔴 **自癒對 `104woo.html` 有額外檢查，不要拿掉。**
+  白名單裡其他檔案（`wNNN/index.html`、`card.jpg`、`hero.jpg`、`voice.mp3`、底圖）
+  產線都會完整重生，人手改了下次上架也會被蓋掉，所以自動收拾不會毀掉什麼。
+  **但 `104woo.html` 不是**——`publish_new.py` 只替換 `const BASE_ITEMS = ` 那一行，
+  其餘版面、CSS、JS 全是手工維護的。改了版面沒 commit 的話，自癒會把它推上線，
+  而且產線**不會**蓋掉它，是真的生效。
+  所以自癒要收 `104woo.html` 之前，會先確認 diff 只動到 BASE_ITEMS 那一行；
+  動到別的行就判定為人工修改而停下來。被刪除（`D`）也一律不收——
+  總覽頁被刪還自動 commit 的話，整個網站會空掉。
+  （四個情境實測過：乾淨、只動 BASE_ITEMS、只動版面、兩者都動。）
+
+- 🔴 **會動到檔案的測試，一定要先 assert 要改的字串真的存在。**
+  上面那個檢查，第一版的測試用 `<head>` 當標記，但 `104woo.html` 裡根本沒有這個標籤
+  （檔案從 `<meta charset>` 開始）。`replace` 什麼都沒換、檔案位元沒變，
+  測試於是「通過」了卻什麼都沒測到，還讓我一度誤判 fsmonitor 的結論有問題。
+
 - 🔴 **不要再開第二個產線實例。** 現在有 Mutex 會回 exit 6 擋下，但語音批次（`local_voice_batch.py`）
   **沒有鎖**，手動跑之前先確認沒有別的在跑：
   ```powershell
