@@ -74,6 +74,43 @@ function Die([string]$m, [int]$code) {
 }
 function NeedOk([string]$what) { if ($LASTEXITCODE -ne 0) { Die "$what 失敗（exit $LASTEXITCODE）" 2 } }
 
+function GitLogged([string[]]$ArgList) {
+  # 2026-11-09：Start-Transcript 不收原生指令的 stderr（PowerShell 5.1 的限制）。
+  # 那天第 8 步 git add 回 exit 128，fatal 訊息完全沒留下來——只知道退出碼，
+  # 查不出原因。所有「退出碼有意義」的 git 呼叫都走這裡，把 stderr 寫進 log。
+  #
+  # ⚠ 5.1 的 2>&1 會把原生指令的 stderr 包成 ErrorRecord，而本檔的
+  #   $ErrorActionPreference = 'Stop' 會讓它變成終止錯誤。git push／fetch 連正常
+  #   進度都寫 stderr，所以這段必須先降成 Continue，結束再還原。
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try {
+    $raw  = & git -C $SITE_REPO @ArgList 2>&1
+    $code = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $prev
+  }
+  foreach ($l in @($raw)) { $t = [string]$l; if ($t.Trim()) { Say "      git: $t" } }
+  $global:LASTEXITCODE = $code
+}
+
+function Push-Pending([string]$why) {
+  # 2026-11-09 審查發現（主張 6）：第 0 步自我修復建立的 commit，在「無異動」
+  # 與 -DryRun 這兩條 exit 0 路徑上永遠不會被推送。本機會一直領先遠端，
+  # 而且因為退出碼是 0，沒有任何人會發現。
+  # （2026-08-22 之前有過落後 61 個 commit 19 天沒人察覺的前例。）
+  if ($NoPush) { Say "   -NoPush：$why，不推送"; return }
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try { & git -C $SITE_REPO fetch -q origin 2>&1 | Out-Null } finally { $ErrorActionPreference = $prev }
+  $ahead = & git -C $SITE_REPO rev-list --count 'origin/main..HEAD'
+  if ($LASTEXITCODE -ne 0) { Say '   ⚠ 算不出領先遠端的 commit 數，略過補推'; return }
+  if ([int]$ahead -le 0) { return }
+  Say "   有 $ahead 個 commit 未推送（$why），推送中"
+  GitLogged @('push', 'origin', 'main')
+  NeedOk 'git push（補推未推送的 commit）'
+}
+
 # ---------- 清除下架滿 30 天的物件 ----------
 # 排在最後：上架失敗就不會連帶清除。無異動時也要跑，否則過期物件永遠不會被清。
 $script:nPurge = 0
@@ -93,6 +130,26 @@ function Invoke-Purge {
 }
 
 Say "===== 法拍上架產線開始（log: $LOG）====="
+
+# ---------- 單一實例互斥鎖 ----------
+# 2026-11-09：23:49 與 00:02 兩個實例同時在跑，兩邊都算出同樣的 98 新／120 更新，
+# 同時進入 publish_new.py 大量寫檔，後者在第 8 步 git add 回 exit 128 而中止。
+# 排程任務本身有 MultipleInstances IgnoreNew，但手動呼叫（或請 Claude Code 代跑）
+# 完全沒有保護——這條產線跑 2 小時，重疊的機會不小。
+#
+# 用具名 Mutex 而不是鎖檔：鎖由 OS 持有，程序被砍或當掉時自動釋放。
+# 鎖檔留在磁碟上的話，當掉一次就要人工清，等於再加一個「無聲卡住」的機制——
+# 這個 repo 已經因為「工作區永遠不乾淨」空轉過 13 天，不要重蹈。
+$script:Lock = New-Object System.Threading.Mutex($false, 'Global\QueenOfAuctions-Pipeline')
+$gotLock = $false
+try { $gotLock = $script:Lock.WaitOne(0) }
+catch [System.Threading.AbandonedMutexException] { $gotLock = $true }  # 前一個實例沒正常結束
+if (-not $gotLock) {
+  Say '❌ 已有另一個產線實例在執行，本次不啟動'
+  Say '   兩個實例會搶同一批檔案。2026-11-09 就是這樣讓第 8 步 git add 回 exit 128。'
+  Stop-Transcript | Out-Null
+  exit 6
+}
 
 # ---------- 0. 前置檢查 ----------
 Say '0. 前置檢查'
@@ -122,7 +179,13 @@ if ($dirty) {
   }
 
   Say '   全部是產線產物（已追蹤檔案被修改），自動收拾後繼續'
-  & git -C $SITE_REPO add -A
+  # 只 add 上面逐筆檢查過的那幾個路徑。
+  # 原本寫 `git add -A`：判斷只看白名單，卻把整個工作區都收進來。
+  # 判斷與 add 之間只要有新檔案冒出來（這個 repo 在 Google Drive 的虛擬檔案系統上，
+  # 正是會這樣），就會把從沒檢查過的東西一起 commit 進去。2026-11-09 審查主張 2。
+  $repairPaths = @()
+  foreach ($ln in $dirty) { $repairPaths += $ln.Substring(3).Trim().Trim('"') }
+  GitLogged (@('add', '--') + $repairPaths)
   NeedOk 'git add（自我修復）'
   $rmsg = Join-Path $LOG_DIR "$stamp.repair.txt"
   [IO.File]::WriteAllText($rmsg, @"
@@ -137,7 +200,7 @@ repo 在 Google Drive 上，剛寫入的檔案不保證立刻被 git 看到—�
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 "@, (New-Object Text.UTF8Encoding $false))
-  & git -C $SITE_REPO commit -q -F $rmsg
+  GitLogged @('commit', '-q', '-F', $rmsg)
   NeedOk 'git commit（自我修復）'
   Say ("   " + (& git -C $SITE_REPO log -1 --format='%h %s'))
 }
@@ -180,11 +243,13 @@ if ($s.updates -gt $MAX_UPDATES) { Die "更新 $($s.updates) 筆超過門檻 $MA
 if ($s.new -eq 0 -and $s.updates -eq 0) {
   Say '✅ 無異動（新物件 0 筆、更新 0 筆）'
   Invoke-Purge
+  Push-Pending '無異動路徑'
   Stop-Transcript | Out-Null
   exit 0
 }
 if ($DryRun) {
   Say '✅ -DryRun：到此為止，沒有寫入任何檔案。'
+  Push-Pending '-DryRun 路徑'
   Stop-Transcript | Out-Null
   exit 0
 }
@@ -220,7 +285,7 @@ Say '7. apply_swipe_nav.py'
 
 # ---------- 8. commit 主體（在語音之前，語音失敗時工作也已保住）----------
 Say '8. commit 主體'
-& git -C $SITE_REPO add -A
+GitLogged @('add', '-A')
 NeedOk 'git add'
 $msg = @"
 feat(items): 上架 $nAdd 筆新物件、就地更新 $nUpd 筆（自動排程）
@@ -237,7 +302,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 $msgFile = Join-Path $LOG_DIR "$stamp.commitmsg.txt"
 # 不用 Set-Content -Encoding utf8：PowerShell 5.1 會寫入 BOM，commit 標題開頭就多一個看不見的字元
 [IO.File]::WriteAllText($msgFile, $msg, (New-Object Text.UTF8Encoding $false))
-& git -C $SITE_REPO commit -q -F $msgFile
+GitLogged @('commit', '-q', '-F', $msgFile)
 NeedOk 'git commit'
 Say ("   " + (& git -C $SITE_REPO log -1 --format='%h %s'))
 
@@ -274,6 +339,7 @@ if ($missing.Count -gt 0) {
 }
 
 Invoke-Purge
+Push-Pending '收尾'
 Say "===== 完成：新增 $nAdd 筆、更新 $nUpd 筆、清除 $script:nPurge 筆 ====="
 Stop-Transcript | Out-Null
 exit 0

@@ -143,55 +143,168 @@ open(HTML, "w", encoding="utf-8").write(html[:m.start(1)] + new_json + html[m.en
 print(f"\n已刪除資料夾 {removed} 個｜修補導覽 {patched} 頁｜BASE_ITEMS {len(items)} → {len(keep)}")
 
 # 4) commit
-#    ⚠ repo 在 Google Drive 上，剛寫入的檔案不保證立刻被 git 看到。
-#      2026-10-13 就發生過：122 個資料夾刪除進了 commit，但 104woo.html 與
-#      124 頁導覽修補沒進去，線上 BASE_ITEMS 一度指向已刪除的物件。
-#      所以 commit 後要再 stage 幾次，有東西才補進同一個 commit。
+#    ⚠ repo 在 Google Drive 的虛擬檔案系統上（偽裝成 FAT32，Get-Volume 讀不到），
+#      剛寫入的檔案不保證立刻被 git 看到。
+#      2026-10-13：122 個資料夾刪除進了 commit，但 104woo.html 與 124 頁導覽修補
+#      沒進去，線上 BASE_ITEMS 一度指向已刪除的物件。
 def stage_all():
     git("add", "-A", "--", "104woo.html", *[c for c in purge_codes])
     for it in kept_sorted:
         git("add", "--", f"{it['code']}/index.html")
 
 
+# ---- 核對用的三個檢查 ----
+#
+# 🔴 不要用 `git status` 當核對依據。
+# 2026-10-26 的鐵證：下面這段核對當時已經存在（a6cc07b 00:05:26，
+# 比清除 commit a45264d 00:08:38 早三分鐘），卻仍讓 w629/index.html 漏出去。
+# 因為它信任 git status——repo 開了 core.fsmonitor，status 回報工作區乾淨，
+# 而磁碟上的 w629/index.html 跟 HEAD 其實不一樣。
+# 核對邏輯沒錯，錯在它建立在一個會說謊的指令上。
+# 後果：工作區從此永遠不乾淨 → 四次排程連續 exit 3 → 13 天無聲空轉。
+#
+# 所以改用 git hash-object 把磁碟內容重算一次 oid，跟 HEAD 版的 blob oid 比對。
+# hash-object 會套用與 commit 相同的 clean filter（autocrlf / .gitattributes），
+# 所以不能直接拿 `git show` 的位元去比——text 檔的換行會被轉換而全部誤判。
+# 兩邊都只用一次 git 呼叫，548 個檔案約一秒。
+
+
+def head_oids():
+    """HEAD 版所有檔案的 blob oid。一次 git 呼叫。"""
+    out = {}
+    for ln in git("ls-tree", "-r", "HEAD").stdout.splitlines():
+        meta, _, path = ln.partition("\t")
+        parts = meta.split()
+        if len(parts) == 3:
+            out[path] = parts[2]
+    return out
+
+
+def disk_oids(paths):
+    """磁碟內容重算的 blob oid。一次 git 呼叫，不讀 index、不問 fsmonitor。"""
+    if not paths:
+        return {}
+    r = subprocess.run(["git", "-C", REPO, "hash-object", "--stdin-paths"],
+                       input="\n".join(paths) + "\n", capture_output=True,
+                       text=True, encoding="utf-8", errors="ignore")
+    oids = r.stdout.split()
+    if r.returncode != 0 or len(oids) != len(paths):
+        return {}
+    return dict(zip(paths, oids))
+
+
+def differs_from_head():
+    """磁碟內容 != HEAD 版的產線檔案。回傳路徑清單；空清單代表 commit 完整。"""
+    want = ["104woo.html"] + [f"{it['code']}/index.html" for it in kept_sorted]
+    want = [p for p in want if os.path.exists(os.path.join(REPO, p))]
+    h = head_oids()
+    d = disk_oids(want)
+    if not d:
+        return ["(hash-object 失敗，無法核對)"]
+    return [p for p in want if h.get(p) != d.get(p)]
+
+
+def broken_nav():
+    """導覽連結指向不存在的資料夾。純讀磁碟，完全不經過 git。
+
+    這是 2026-10-13 線上實際壞掉的形狀：BASE_ITEMS 筆數對、工作區「看起來」乾淨，
+    但總覽與物件頁指向已被刪掉的物件。筆數相符不代表結構一致。
+    """
+    exist = {d for d in os.listdir(REPO) if re.fullmatch(r"w\d+", d)}
+    bad = []
+    for c in sorted(exist):
+        p = os.path.join(REPO, c, "index.html")
+        if not os.path.exists(p):
+            continue
+        body = io.open(p, encoding="utf-8", errors="ignore").read()
+        for t in re.findall(r'href="\.\./(w\d+)/"', body):
+            if t not in exist:
+                bad.append(f"{c} -> {t}")
+    return bad
+
+
+def disk_mismatch():
+    """磁碟上的 BASE_ITEMS 與資料夾是否一一對應。純讀磁碟。"""
+    body = io.open(HTML, encoding="utf-8").read()
+    in_html = set(re.findall(r'"code":"(w\d+)"', body))
+    on_disk = {d for d in os.listdir(REPO) if re.fullmatch(r"w\d+", d)}
+    return sorted(in_html - on_disk), sorted(on_disk - in_html)
+
+
+def head_count():
+    return len(set(re.findall(r'"code":"(w' + r'\d+)"',
+                              git('show', 'HEAD:104woo.html').stdout)))
+
+
+# ---- 建立 commit ----
+# 記下 commit 前的 HEAD：只有「本次確實建立了新 commit」才可以 amend。
+# 否則 amend 會改寫上一個 commit，而那個很可能已經推送出去了（主張 4）。
+pre_head = git("rev-parse", "HEAD").stdout.strip()
 stage_all()
 r = git("commit", "-m",
         f"chore: 清除下架滿 {args.days} 天的物件（{len(purge_codes)} 筆：{purge_codes[0]}–{purge_codes[-1]}）\n\n"
         f"依 delist.js 規則（開標+3h 下架）再滿 {args.days} 天即刪除；"
         f"總覽 {len(items)} → {len(keep)} 筆，並修補相鄰物件導覽鏈。")
 print(r.stdout.strip()[:200] if r.returncode == 0 else "（無變更或 commit 失敗）")
+ours = git("rev-parse", "HEAD").stdout.strip() != pre_head
+if not ours:
+    print("  ⚠ 本次沒有建立新 commit，之後一律不 amend（避免改寫已推送的歷史）")
 
-# 重試到「HEAD 版筆數正確且工作區乾淨」為止，最多 60 秒。
-# 固定重試次數不夠：2026-10-26 清 61 筆時，104woo.html 延遲到第 2 次之後才可見，
+# ---- 重試到磁碟內容與 HEAD 一致為止，最多 60 秒 ----
+# 固定重試次數不夠：2026-10-26 清 61 筆時 104woo.html 延遲到第 2 次之後才可見，
 # 迴圈已因為「這次沒東西可 stage」而提早結束，commit 裡仍是舊的 587 筆。
-def head_count():
-    return len(set(re.findall(r'"code":"(w' + r'\d+)"', git('show', 'HEAD:104woo.html').stdout)))
-
-
 deadline = time.time() + 60
 while True:
-    stage_all()
-    if git('diff', '--cached', '--quiet').returncode != 0:
-        git('commit', '--amend', '--no-edit')
-        print('  ↳ 補上延遲才可見的檔案')
-    if head_count() == len(keep) and not git('status', '--porcelain').stdout.strip():
+    missing = differs_from_head()
+    if not missing:
         break
+    stage_all()
+    if git("diff", "--cached", "--quiet").returncode != 0:
+        if ours:
+            git("commit", "--amend", "--no-edit")
+            print(f"  ↳ 補上延遲才可見的檔案（{len(missing)} 個）")
+        else:
+            git("commit", "-m", "fix(purge): 補上延遲才可見的檔案")
+            ours = True
+            print(f"  ↳ 另開 commit 補上延遲才可見的檔案（{len(missing)} 個）")
     if time.time() > deadline:
         break
     time.sleep(3)
 
-# 核對：commit 裡的 BASE_ITEMS 筆數要等於保留筆數，否則線上會對不上資料夾
+# ---- 核對：三道都要過，否則不推送 ----
+problems = []
+
+missing = differs_from_head()
+if missing:
+    problems.append(f"磁碟內容與 HEAD 版不一致的檔案 {len(missing)} 個："
+                    + "、".join(missing[:8]) + ("…" if len(missing) > 8 else ""))
+
 in_head = head_count()
-left = git("status", "--porcelain").stdout.strip()
-if in_head != len(keep) or left:
+if in_head != len(keep):
+    problems.append(f"HEAD 版 BASE_ITEMS {in_head} 筆、應為 {len(keep)} 筆")
+
+only_html, only_disk = disk_mismatch()
+if only_html or only_disk:
+    problems.append(f"BASE_ITEMS 與資料夾不對應：只在總覽 {only_html[:5]}、只在磁碟 {only_disk[:5]}")
+
+nav = broken_nav()
+if nav:
+    problems.append(f"導覽連結指向不存在的物件 {len(nav)} 筆：" + "、".join(nav[:8]))
+
+if problems:
     print("")
-    print(f"❌ commit 內容與預期不符：HEAD 版 BASE_ITEMS {in_head} 筆、應為 {len(keep)} 筆")
+    print("❌ commit 內容與預期不符，不推送：")
+    for p in problems:
+        print(f"   - {p}")
+    left = git("status", "--porcelain").stdout.strip()
     if left:
-        print("   仍有未 commit 的變動：")
+        print("   git status 回報的變動（注意：開了 fsmonitor 時這份可能不可信）：")
         for ln in left.splitlines()[:10]:
             print("    ", ln)
-    print("   ⚠ 不推送，請人工確認後再處理。")
+    print("   ⚠ 請人工確認後再處理。")
     sys.exit(2)
-print(f"核對通過：HEAD 版 BASE_ITEMS {in_head} 筆、工作區乾淨")
+print(f"核對通過：HEAD 版 BASE_ITEMS {in_head} 筆、"
+      f"磁碟與 HEAD 逐檔一致、BASE_ITEMS ⇔ 資料夾一一對應、導覽無壞連結")
 write_stats(purge=len(purge_codes), kept=len(keep), total=len(items),
             dry_run=False, done=True, deleted=purge_codes)
 

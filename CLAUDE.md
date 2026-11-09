@@ -119,8 +119,14 @@ python apply_swipe_nav.py                # 掛上手機滑動切換（見下節�
      一拍到二拍實測間隔約 21～35 天，爬蟲每 8～11 天跑一次，30 天足以涵蓋。
      過期物件本來就被 `delist.js` 藏起來不會出現在總覽，留著只佔空間、不影響版面。
 
-### 語音生成（本機 GPU，優先於雲端）
-本機有 RTX 5070，跑一筆約 **38 秒**；雲端 GitHub Actions 為 CPU，一筆約 20 分鐘（且有 6 小時上限）。
+### 語音生成（本機 GPU；雲端只能手動觸發）
+本機有 RTX 5070，跑一筆約 **32 秒**（2026-11-09 實測 218 筆）；
+雲端 GitHub Actions 為 CPU，一筆約 20 分鐘（且有 6 小時上限）。
+
+🔴 **`Generate Clone Voice` workflow 已於 2026-11-09 移除 `on: push`，只剩 `workflow_dispatch`。**
+原本每次上架推送都會把它叫起來，而它和本機批次都在掃「缺 `voice.mp3` 的物件」——
+2026-11-09 兩邊同時生成了同一批 14 筆（w1000–w1021），造成 14 個二進位檔衝突要人工收。
+雲端保留作「新電腦沒有 NVIDIA 顯卡」時的後路，要用就去 Actions 頁面手動觸發。
 新物件上架後補語音，優先用本機：
 ```
 & "C:\Users\ken\.venvs\voxcpm\Scripts\python.exe" local_voice_batch.py
@@ -135,6 +141,30 @@ python apply_swipe_nav.py                # 掛上手機滑動切換（見下節�
 > ```
 > 參考音色 `voices/法拍女王 陳慧瑜/`（`ref_voice.wav` ＋ `prompt.txt`）在 repo 內，是音色的唯一真理源。
 `local_voice_batch.py` 會掃出所有缺 `voice.mp3` 的物件，模型只載入一次，逐筆生成並每 10 筆 commit，最後自動 push。
+
+### 🔴 兩個會造成實際損害的坑
+
+**一、同一份工作不能有兩個生產者。** 2026-11-09 一天內發作兩次：
+兩個 `run_pipeline.ps1` 實例同時跑 → 第 8 步 `git add` 回 exit 128；
+本機語音批次 ＋ 雲端 workflow → 14 個 `voice.mp3` 衝突。
+
+`run_pipeline.ps1` 已加具名 Mutex（重複執行回 **exit 6**），
+但 **`local_voice_batch.py` 與其他單步腳本都沒有鎖**。手動跑之前先確認：
+
+```powershell
+Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Select ProcessId, CommandLine
+```
+
+**二、核對 commit 內容不要用 `git status`。**
+2026-10-26 清除 61 筆時，核對機制（當時已存在）條件包含「`git status --porcelain` 為空」，
+卻仍放行了漏掉 `w629/index.html` 的 commit——**因為 `git status` 回報乾淨，
+而磁碟上的檔案跟 HEAD 其實不一樣**。後果是工作區從此永遠不乾淨、
+四次排程連續 exit 3、**13 天無聲空轉**。
+
+成因推定為 `core.fsmonitor`（已於 2026-11-09 unset；G: 是 Google Drive 的虛擬檔案系統，
+不保證把變更通知送齊，git 會信任快取）。要驗「檔案是否真的進了 commit」，
+拿 `git hash-object` 重算磁碟內容的 oid，跟 `git ls-tree -r HEAD` 比對——
+`purge_expired.py` 的 `differs_from_head()` 是現成的寫法，548 個檔約 4.2 秒。
 
 ### 語音克隆機制
 本地語音克隆腳本 `auto_voice.py`（位於克隆專案目錄下）會自動執行以下流程：

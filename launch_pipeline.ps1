@@ -72,6 +72,7 @@ function Finish([int]$code, [string]$note) {
       3 { '工作區不乾淨，需要人處理' }
       4 { '假成功：回報 0 但沒有 log' }
       5 { '等不到 G: 上的腳本' }
+      6 { '已有另一個產線實例在執行，本次略過' }
       default { "未知退出碼 $code" }
     }
     L "❌ $why"
