@@ -54,8 +54,11 @@ function Notify([string]$title, [string]$body) {
     $ni = New-Object System.Windows.Forms.NotifyIcon
     $ni.Icon = [System.Drawing.SystemIcons]::Warning
     $ni.Visible = $true
-    $ni.ShowBalloonTip(20000, $title, $body, [System.Windows.Forms.ToolTipIcon]::Warning)
-    Start-Sleep -Seconds 12
+    $ni.ShowBalloonTip(30000, $title, $body, [System.Windows.Forms.ToolTipIcon]::Warning)
+    # Dispose() 會送出 NIM_DELETE 把圖示移除，連帶讓氣球消失，所以要先等。
+    # ⚠ 不能像審查建議的那樣「拿掉 Start-Sleep」——那會讓氣球連顯示都來不及。
+    # 但也不能只靠氣球：無人在場時它等於沒發生，持久訊號見 Finish() 寫的狀態檔。
+    Start-Sleep -Seconds 30
     $ni.Dispose()
   } catch {
     L "（通知顯示失敗：$($_.Exception.Message)）"
@@ -63,20 +66,40 @@ function Notify([string]$title, [string]$body) {
 }
 
 function Finish([int]$code, [string]$note) {
-  $txt = "{0}  exit={1}  {2}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $code, $note
+  $why = switch ($code) {
+    0   { '成功或無異動' }
+    241 { '護欄觸發（筆數異常）' }
+    242 { '執行失敗' }
+    243 { '工作區不乾淨，需要人處理' }
+    244 { '假成功：回報 0 但沒有 log' }
+    245 { '等不到 G: 上的腳本' }
+    246 { '已有另一個產線實例在執行，本次略過' }
+    default { "未知退出碼 $code" }
+  }
+  $mark = if ($code -eq 0) { 'OK' } else { 'FAILED' }
+  $txt = "{0}  {1}  exit={2}  {3}  {4}" -f `
+    (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $mark, $code, $why, $note
   [IO.File]::WriteAllText((Join-Path $LOCAL 'LAST-RESULT.txt'), $txt, (New-Object Text.UTF8Encoding $false))
-  if ($code -ne 0) {
-    $why = switch ($code) {
-      241 { '護欄觸發（筆數異常）' }
-      242 { '執行失敗' }
-      243 { '工作區不乾淨，需要人處理' }
-      244 { '假成功：回報 0 但沒有 log' }
-      245 { '等不到 G: 上的腳本' }
-      246 { '已有另一個產線實例在執行，本次略過' }
-      default { "未知退出碼 $code" }
+
+  # 再寫一份到 repo 內。
+  # %LOCALAPPDATA% 那份沒人會去看——13 天無聲空轉就是這樣沒被發現的。
+  # repo 裡的 output\pipeline-logs\ 是開工時一定會經過的地方（output/* 已 gitignore，
+  # 不會弄髒工作區）。成功也要寫，否則舊的失敗紀錄會一直留著，分不出新舊。
+  try {
+    $siteLogDir = 'G:\我的雲端硬碟\ai agent\Queen-of-Auctions\output\pipeline-logs'
+    if (Test-Path $siteLogDir) {
+      [IO.File]::WriteAllText((Join-Path $siteLogDir 'LAST-RESULT.txt'), $txt,
+                              (New-Object Text.UTF8Encoding $false))
     }
+  } catch {
+    L "（狀態檔寫不進 G:：$($_.Exception.Message)）"   # exit 245 時本來就可能寫不進去
+  }
+
+  if ($code -ne 0) {
     L "❌ $why"
-    Notify '法拍上架產線失敗' "$why`n退出碼 $code`n紀錄：$LLOG"
+    Notify '法拍上架產線失敗' "$why`n退出碼 $code`n`n下一步：跟 Claude Code 說「檢查排程」`n紀錄：$LLOG"
+  } else {
+    L "✅ $why"
   }
   exit $code
 }

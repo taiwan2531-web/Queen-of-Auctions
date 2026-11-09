@@ -18,6 +18,19 @@
 - `purge_expired.py` 的核對改成**不信任 `git status`**
 - 雲端語音 workflow 改為只能手動觸發
 
+## 🔔 開工第一件事：看上次排程的結果
+
+```powershell
+Get-Content 'G:\我的雲端硬碟\ai agent\Queen-of-Auctions\output\pipeline-logs\LAST-RESULT.txt'
+```
+
+一行，長這樣：`2026-11-09 20:01:28  OK  exit=0  成功或無異動  20261109_200128.log`
+開頭是 **`FAILED`** 就要處理，退出碼對照見下方表格。成功也會寫，所以看到的一定是最新一次。
+
+> 為什麼要多這個檔：失敗通知原本只有一個會消失的氣球提示 ＋ 寫在
+> `%LOCALAPPDATA%` 的紀錄，兩個都沒人會去看——**13 天無聲空轉就是這樣沒被發現的**。
+> 這份寫在 repo 的 `output/`（已 gitignore，不會弄髒工作區），開工一定會經過。
+
 ## 🚦 目前狀態
 
 - **可運行**。線上 **549 筆**，`index.html`／`voice.mp3`／`card.jpg`／`hero.jpg`／BASE_ITEMS **五項都是 549**。
