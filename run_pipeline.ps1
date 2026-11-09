@@ -165,6 +165,28 @@ if (-not $gotLock) {
 
 # ---------- 0. 前置檢查 ----------
 Say '0. 前置檢查'
+
+# fsmonitor 防呆。
+# 2026-11-09 對照實驗（每組 1440 次檢查）：
+#     檔案系統            fsmonitor 關   fsmonitor 開
+#     G:（Google Drive）  0 次漏看       720/720 已追蹤檔案漏看（100%）
+#     C:（NTFS）          0 次漏看       0 次漏看
+# 是 fsmonitor × Google Drive 的組合：git 沒壞（C: 上開關都正常），
+# Drive 單獨也沒問題（關掉後 0 漏看）。而且只漏「被修改的已追蹤檔案」，
+# 未追蹤的新檔案一次都沒漏——與 8/28、10/13、10/26、11/9 四次事故完全吻合
+# （漏掉的全是 104woo.html 與導覽頁，新增的 wNNN/ 資料夾一次都沒漏）。
+# git 升級、其他工具或手動設定都可能把它打開，所以每次跑之前檢查一次。
+# 這是本機效能設定，關掉只讓 git status 慢約 1 秒，沒有資料風險。
+$fsm = & git -C $SITE_REPO config --get core.fsmonitor
+if ($fsm -and $fsm -ne 'false') {
+  Say "⚠ core.fsmonitor = $fsm"
+  Say '   在 Google Drive 上這會讓 git 看不到被修改的已追蹤檔案（實測 100% 漏看），自動關閉'
+  GitLogged @('config', 'core.fsmonitor', 'false')
+  GitLogged @('config', 'core.untrackedCache', 'false')
+  GitLogged @('fsmonitor--daemon', 'stop')
+  GitLogged @('update-index', '--really-refresh')
+  $global:LASTEXITCODE = 0   # 上面幾個就算回非 0 也不該讓產線停下來
+}
 $dirty = & git -C $SITE_REPO status --porcelain
 if ($dirty) {
   Say '工作區有未 commit 的變動：'
@@ -211,9 +233,14 @@ if ($dirty) {
   foreach ($ln in $dirty) { $repairPaths += $ln.Substring(3).Trim().Trim('"') }
   GitLogged (@('add', '--') + $repairPaths)
   NeedOk 'git add（自我修復）'
+  # 🔴 自癒被觸發 = 上一次有漏檔。不要把它當成「已經處理好了」而忽略，
+  #    要回頭查上一次為什麼沒收乾淨（最常見的原因是 fsmonitor 又被打開）。
+  Say "   ⚠ 自癒被觸發代表上一次執行有漏檔，請查上一次的 log"
   $rmsg = Join-Path $LOG_DIR "$stamp.repair.txt"
   [IO.File]::WriteAllText($rmsg, @"
 chore: 自動收拾產線殘留（$($dirty.Count) 個檔案）
+
+$($repairPaths -join "`n")
 
 上一次執行寫出的產線產物沒進 commit，工作區因此不乾淨。
 repo 在 Google Drive 上，剛寫入的檔案不保證立刻被 git 看到——
