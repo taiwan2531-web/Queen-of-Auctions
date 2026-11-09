@@ -67,12 +67,12 @@ function Finish([int]$code, [string]$note) {
   [IO.File]::WriteAllText((Join-Path $LOCAL 'LAST-RESULT.txt'), $txt, (New-Object Text.UTF8Encoding $false))
   if ($code -ne 0) {
     $why = switch ($code) {
-      1 { '護欄觸發（筆數異常）' }
-      2 { '執行失敗' }
-      3 { '工作區不乾淨，需要人處理' }
-      4 { '假成功：回報 0 但沒有 log' }
-      5 { '等不到 G: 上的腳本' }
-      6 { '已有另一個產線實例在執行，本次略過' }
+      241 { '護欄觸發（筆數異常）' }
+      242 { '執行失敗' }
+      243 { '工作區不乾淨，需要人處理' }
+      244 { '假成功：回報 0 但沒有 log' }
+      245 { '等不到 G: 上的腳本' }
+      246 { '已有另一個產線實例在執行，本次略過' }
       default { "未知退出碼 $code" }
     }
     L "❌ $why"
@@ -104,8 +104,8 @@ while ($true) {
   Start-Sleep -Seconds 30
 }
 if (-not $ready) {
-  L "❌ 等了 $WaitMinutes 分鐘仍讀不到完整腳本，放棄（exit 5）"
-  Finish 5 '等不到 G: 上的腳本'
+  L "❌ 等了 $WaitMinutes 分鐘仍讀不到完整腳本，放棄（exit 245）"
+  Finish 245 '等不到 G: 上的腳本'
 }
 L "腳本就緒（$($txt.Length) 字元）"
 
@@ -135,8 +135,8 @@ for ($i = 0; $i -lt 12 -and -not $newLog; $i++) {
 
 if (-not $newLog) {
   if ($rc -eq 0) {
-    L '❌ 產線回報 0，但沒有產生任何 log——假成功（exit 4）'
-    Finish 4 '假成功'
+    L '❌ 產線回報 0，但沒有產生任何 log——假成功（exit 244）'
+    Finish 244 '假成功'
   }
   L "⚠ 沒有找到 log，沿用產線退出碼 $rc"
   Finish $rc '沒有產生 log'

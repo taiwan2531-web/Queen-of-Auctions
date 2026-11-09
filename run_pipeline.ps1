@@ -56,6 +56,18 @@ $stamp   = Get-Date -Format 'yyyyMMdd_HHmmss'
 $LOG     = Join-Path $LOG_DIR "$stamp.log"
 $STATS   = Join-Path $LOG_DIR "$stamp.stats.json"
 
+# ---------- 退出碼 ----------
+# 🔴 用 241–253，不要用 1–6。
+# 工作排程器的「上次執行結果」會把退出碼當 Win32 錯誤碼翻成訊息：
+#   1 功能錯誤｜2 系統找不到指定的檔案｜3 系統找不到指定的路徑
+#   4 系統無法開啟檔案｜5 存取被拒｜6 控制代碼無效
+# 產線回 3（工作區不乾淨）會顯示成「系統找不到指定的路徑」，
+# 回 5（等不到腳本）會顯示成「存取被拒」——往完全錯的方向查。
+# 241–253 沒有對應的系統訊息（net helpmsg 實測），排程器只顯示裸退出碼。
+#   0 成功或無異動
+#   241 護欄觸發   242 執行失敗   243 工作區不乾淨
+#   244 假成功     245 等不到腳本 246 已有另一個實例在跑
+#
 # ---------- 護欄門檻 ----------
 $MIN_CRAWL   = 800    # 正常 1300~1450 筆。太少代表網站改版或網路異常，資料不可信
 $MAX_NEW     = 200    # 正常一批 50~180 筆。暴增通常是案號比對壞了
@@ -72,7 +84,7 @@ function Die([string]$m, [int]$code) {
   Stop-Transcript | Out-Null
   exit $code
 }
-function NeedOk([string]$what) { if ($LASTEXITCODE -ne 0) { Die "$what 失敗（exit $LASTEXITCODE）" 2 } }
+function NeedOk([string]$what) { if ($LASTEXITCODE -ne 0) { Die "$what 失敗（exit $LASTEXITCODE）" 242 } }
 
 function GitLogged([string[]]$ArgList) {
   # 2026-11-09：Start-Transcript 不收原生指令的 stderr（PowerShell 5.1 的限制）。
@@ -118,11 +130,11 @@ function Invoke-Purge {
   Say '清除過期物件'
   $pstats = Join-Path $LOG_DIR "$stamp.purge.json"
   & $PY_CRAWL (Join-Path $SITE_REPO 'purge_expired.py') --dry-run --stats-out $pstats | Out-Null
-  if ($LASTEXITCODE -ne 0) { Die "purge dry-run 失敗（exit $LASTEXITCODE）" 2 }
+  if ($LASTEXITCODE -ne 0) { Die "purge dry-run 失敗（exit $LASTEXITCODE）" 242 }
   $ps = Get-Content $pstats -Raw -Encoding UTF8 | ConvertFrom-Json
   $script:nPurge = [int]$ps.purge
   if ($script:nPurge -eq 0) { Say "   沒有需要清除的物件"; return }
-  if ($script:nPurge -gt $MAX_PURGE) { Die "待清除 $($script:nPurge) 筆超過門檻 $MAX_PURGE——疑似下架判定出問題，不清除" 1 }
+  if ($script:nPurge -gt $MAX_PURGE) { Die "待清除 $($script:nPurge) 筆超過門檻 $MAX_PURGE——疑似下架判定出問題，不清除" 241 }
   Say "   清除 $($script:nPurge) 筆（保留 $($ps.kept) 筆）"
   $pushArg = if ($NoPush) { @() } else { @("--push") }
   & $PY_CRAWL (Join-Path $SITE_REPO 'purge_expired.py') --stats-out $pstats @pushArg
@@ -148,7 +160,7 @@ if (-not $gotLock) {
   Say '❌ 已有另一個產線實例在執行，本次不啟動'
   Say '   兩個實例會搶同一批檔案。2026-11-09 就是這樣讓第 8 步 git add 回 exit 128。'
   Stop-Transcript | Out-Null
-  exit 6
+  exit 246
 }
 
 # ---------- 0. 前置檢查 ----------
@@ -165,17 +177,29 @@ if ($dirty) {
   # 刻意不收拾的情況，因為它們代表「有人做到一半」或「上架被中斷」：
   #   ?? wNNN/        中斷的上架留下的孤兒資料夾；自動 commit 會讓 BASE_ITEMS 與資料夾不一致
   #   M  *.py / *.ps1 / *.md   有人在改程式或文件
-  $own = '^(104woo\.html|w\d+/index\.html)$'
+  # 哪些檔案是產線自己產的（2026-11-09 擴充）：
+  # 原本只收 104woo.html 與 wNNN/index.html，漏掉 burn_price.ps1 產的
+  # card.jpg／hero.jpg、local_voice_batch.py 產的 voice.mp3、以及底圖。
+  # purge 刪一個資料夾時這些會全部以 ' D' 出現，一個都不收的話整批卡死。
+  $own = '^(104woo\.html|w\d+/(index\.html|card\.jpg|hero\.jpg|voice\.mp3|photo\.jpg|map\.jpg))$'
+  # 哪些狀態碼算「產線做到一半」（2026-11-09 擴充）：
+  #   ' M' 已追蹤被改、未 stage        'M ' 已 stage 未 commit
+  #   'MM' stage 後又被改              ' D' 工作區刪除（purge 刪資料夾逾時）
+  #   'D ' 已 stage 的刪除
+  # 🔴 未追蹤的 '??' 一律不收。那代表中斷的上架留下孤兒資料夾，
+  #    自動 commit 會讓 BASE_ITEMS 與資料夾不一致（2026-09-20 有過 35 個）。
+  $okCodes = @(' M', 'M ', 'MM', ' D', 'D ')
   $unsafe = @()
   foreach ($ln in $dirty) {
+    if ($ln.Length -lt 4) { $unsafe += $ln; continue }
     $code = $ln.Substring(0, 2)
     $path = $ln.Substring(3).Trim().Trim('"')
-    if ($code -ne ' M' -or $path -notmatch $own) { $unsafe += $ln }
+    if ($okCodes -notcontains $code -or $path -notmatch $own) { $unsafe += $ln }
   }
   if ($unsafe.Count -gt 0) {
     Say '   其中這些不是產線產物，不自動處理：'
     $unsafe | ForEach-Object { Say "     $_" }
-    Die '工作區不乾淨。那可能是你做到一半的東西，腳本不會自行 commit 或丟棄' 3
+    Die '工作區不乾淨。那可能是你做到一半的東西，腳本不會自行 commit 或丟棄' 243
   }
 
   Say '   全部是產線產物（已追蹤檔案被修改），自動收拾後繼續'
@@ -216,12 +240,12 @@ if ($SkipCrawl) {
   & $PY_CRAWL crawler_104woo_property.py --city 嘉義縣 台南市 高雄市 屏東縣 --sort-date --pending-only --max-pages $MaxPages
   $rc = $LASTEXITCODE
   Pop-Location
-  if ($rc -ne 0) { Die "爬蟲失敗（exit $rc）" 2 }
+  if ($rc -ne 0) { Die "爬蟲失敗（exit $rc）" 242 }
 }
 
 $json = Get-ChildItem (Join-Path $CRAWL_REPO 'output\104woo_物件_4縣市_*.json') |
         Sort-Object LastWriteTime -Descending | Select-Object -First 1
-if (-not $json) { Die '找不到任何爬蟲 JSON' 2 }
+if (-not $json) { Die '找不到任何爬蟲 JSON' 242 }
 Say "   使用爬蟲檔：$($json.Name)（$($json.LastWriteTime.ToString('MM-dd HH:mm'))）"
 
 # ---------- 2. dry-run 並檢查護欄 ----------
@@ -230,15 +254,15 @@ Push-Location $CRAWL_REPO
 & $PY_CRAWL publish_new.py $json.FullName --dry-run --stats-out $STATS
 $rc = $LASTEXITCODE
 Pop-Location
-if ($rc -ne 0) { Die "dry-run 失敗（exit $rc）" 2 }
-if (-not (Test-Path $STATS)) { Die 'dry-run 沒有產出 stats.json' 2 }
+if ($rc -ne 0) { Die "dry-run 失敗（exit $rc）" 242 }
+if (-not (Test-Path $STATS)) { Die 'dry-run 沒有產出 stats.json' 242 }
 
 $s = Get-Content $STATS -Raw -Encoding UTF8 | ConvertFrom-Json
 Say ("   爬蟲 {0} 筆｜現有 {1} 筆｜新物件 {2} 筆｜就地更新 {3} 筆" -f $s.crawl, $s.existing, $s.new, $s.updates)
 
-if ($s.crawl   -lt $MIN_CRAWL)   { Die "爬蟲只有 $($s.crawl) 筆（門檻 $MIN_CRAWL）——資料不可信，不上架" 1 }
-if ($s.new     -gt $MAX_NEW)     { Die "新物件 $($s.new) 筆超過門檻 $MAX_NEW——疑似案號比對壞掉" 1 }
-if ($s.updates -gt $MAX_UPDATES) { Die "更新 $($s.updates) 筆超過門檻 $MAX_UPDATES——疑似案號比對壞掉" 1 }
+if ($s.crawl   -lt $MIN_CRAWL)   { Die "爬蟲只有 $($s.crawl) 筆（門檻 $MIN_CRAWL）——資料不可信，不上架" 241 }
+if ($s.new     -gt $MAX_NEW)     { Die "新物件 $($s.new) 筆超過門檻 $MAX_NEW——疑似案號比對壞掉" 241 }
+if ($s.updates -gt $MAX_UPDATES) { Die "更新 $($s.updates) 筆超過門檻 $MAX_UPDATES——疑似案號比對壞掉" 241 }
 
 if ($s.new -eq 0 -and $s.updates -eq 0) {
   Say '✅ 無異動（新物件 0 筆、更新 0 筆）'
@@ -260,14 +284,14 @@ Push-Location $CRAWL_REPO
 & $PY_CRAWL publish_new.py $json.FullName --stats-out $STATS
 $rc = $LASTEXITCODE
 Pop-Location
-if ($rc -ne 0) { Die "上架失敗（exit $rc）" 2 }
+if ($rc -ne 0) { Die "上架失敗（exit $rc）" 242 }
 
 $s2 = Get-Content $STATS -Raw -Encoding UTF8 | ConvertFrom-Json
 $nAdd = @($s2.added).Count
 $nUpd = @($s2.updated).Count
 Say "   實際新增 $nAdd 筆、更新 $nUpd 筆"
 if ($nAdd -ne $s.new -or $nUpd -ne $s.updates) {
-  Die "實際筆數（$nAdd/$nUpd）與 dry-run（$($s.new)/$($s.updates)）不符" 2
+  Die "實際筆數（$nAdd/$nUpd）與 dry-run（$($s.new)/$($s.updates)）不符" 242
 }
 
 # ---------- 4~7. 後處理（順序不可調換）----------
@@ -319,7 +343,7 @@ if (-not $NoPush) {
   & git -C $SITE_REPO push origin main
   if ($LASTEXITCODE -ne 0) { Say '   （push 回報非 0，多半是語音腳本已經推過，下面用 ahead 數確認）' }
   $ahead = (& git -C $SITE_REPO rev-list '@{u}..HEAD' --count)
-  if ($ahead -ne '0') { Die "還有 $ahead 個 commit 沒推上去" 2 }
+  if ($ahead -ne '0') { Die "還有 $ahead 個 commit 沒推上去" 242 }
   Say '   ✅ 已與 origin/main 同步'
 }
 
@@ -335,7 +359,7 @@ foreach ($d in $dirs) {
 Say "   物件資料夾 $($dirs.Count) 個｜缺件 $($missing.Count) 個"
 if ($missing.Count -gt 0) {
   $missing | Select-Object -First 10 | ForEach-Object { Say "     缺 $_" }
-  Die "有 $($missing.Count) 個檔案沒生成" 2
+  Die "有 $($missing.Count) 個檔案沒生成" 242
 }
 
 Invoke-Purge
