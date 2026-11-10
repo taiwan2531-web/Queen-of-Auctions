@@ -1,0 +1,61 @@
+{
+  "題目": "core.fsmonitor 會不會讓 git 看不到剛寫入的已追蹤檔案",
+  "日期": "2026-11-09",
+  "機器": "KEN-PC｜Windows 11 Pro 10.0.28000｜git 2.55.0.windows.3",
+  "為什麼做": "原本『fsmonitor 是根因』只是推論：看到 daemon 在監看、看到 G: 是虛擬檔案系統就連起來，沒有對照證據。AGY 審查報告主張根因是 Google Drive 本身、建議把 repo 搬到本機 SSD；AGY 後續對話又改口說 fsmonitor 才是直接元兇。兩個處置的代價差很多，不該靠猜。",
+  "方法": [
+    "在目標檔案系統上開一個拋棄式 git repo",
+    "每輪：外部程序寫 60 個已追蹤檔案的修改 + 60 個新的未追蹤檔案",
+    "寫完立刻由另一個 git 程序跑 git status --porcelain，數有幾個沒被看到",
+    "重現產線「寫完馬上 git add」的情境；每組 12 輪 = 1440 次檢查",
+    "fsmonitor 開／關各跑一輪，其餘條件相同"
+  ],
+  "結果": {
+    "G:（Google Drive 虛擬檔案系統）": [
+      {
+        "mode": "關閉",
+        "miss_mod": 0,
+        "miss_new": 0,
+        "total": 1440,
+        "daemon": "fsmonitor-daemon is not watching 'G:/我的雲端硬碟/ai agent/Queen-of-Auctions/output/_fsmonitor_t"
+      },
+      {
+        "mode": "開啟",
+        "miss_mod": 720,
+        "miss_new": 0,
+        "total": 1440,
+        "daemon": "fsmonitor-daemon is watching 'G:/我的雲端硬碟/ai agent/Queen-of-Auctions/output/_fsmonitor_test_"
+      }
+    ],
+    "C:（NTFS，對照組）": [
+      {
+        "mode": "關閉",
+        "miss_mod": 0,
+        "miss_new": 0,
+        "total": 1440,
+        "daemon": "fsmonitor-daemon is not watching 'C:/Users/ken/AppData/Local/Temp/claude/b3da5ce7ed7b1564/"
+      },
+      {
+        "mode": "開啟",
+        "miss_mod": 0,
+        "miss_new": 0,
+        "total": 1440,
+        "daemon": "fsmonitor-daemon is watching 'C:/Users/ken/AppData/Local/Temp/claude/b3da5ce7ed7b1564/c09d"
+      }
+    ]
+  },
+  "結論": [
+    "是 fsmonitor × Google Drive 的組合，不是任一方單獨的問題。",
+    "git 沒壞——C: 上開關都是 0 漏看。",
+    "Drive 單獨也沒問題——關掉 fsmonitor 後 G: 上 0 漏看。",
+    "G: 開著 fsmonitor 時「已追蹤檔案被修改」漏看率 720/720 = 100%，不是偶發競態。",
+    "只漏已追蹤被修改的檔案（miss_mod），未追蹤的新檔案一次都沒漏（miss_new 全 0）。"
+  ],
+  "為什麼這個分布是決定性的": "四次事故漏掉的全是『已追蹤被修改』——8/28 漏文件、10/13 漏 104woo.html 與 124 頁導覽、10/26 漏 w629/index.html、11/9 漏 104woo.html；而每一批新增的 wNNN/ 資料夾（最多一次 98 個）一次都沒漏過。與實驗的 miss_mod/miss_new 分布完全一致。",
+  "處置": [
+    "core.fsmonitor 與 core.untrackedCache 都 unset，daemon 停止。",
+    "run_pipeline.ps1 第 0 步加防呆：發現被打開就自動關掉再跑。",
+    "不把 repo 搬離 Google Drive——代價（改寫死路徑、重建排程、重驗產線、失去跨電腦同步）遠高於關掉一個本機設定，而且實驗已證明關掉就夠。"
+  ],
+  "怎麼重跑": "腳本在當時 session 的 scratchpad（exp_fsmonitor.py）。要重跑就照上面的方法重寫，重點是：外部程序寫檔、立刻用另一個 git 程序查、已追蹤與未追蹤分開計數、兩種檔案系統都要跑。"
+}

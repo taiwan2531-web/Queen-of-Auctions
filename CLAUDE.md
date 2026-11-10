@@ -180,7 +180,7 @@ python apply_swipe_nav.py                # 掛上手機滑動切換（見下節�
 兩個 `run_pipeline.ps1` 實例同時跑 → 第 8 步 `git add` 回 exit 128；
 本機語音批次 ＋ 雲端 workflow → 14 個 `voice.mp3` 衝突。
 
-`run_pipeline.ps1` 已加具名 Mutex（重複執行回 **exit 6**），
+`run_pipeline.ps1` 已加具名 Mutex（重複執行回 **exit 246**），
 但 **`local_voice_batch.py` 與其他單步腳本都沒有鎖**。手動跑之前先確認：
 
 ```powershell
@@ -191,7 +191,7 @@ Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Select ProcessId, Co
 2026-10-26 清除 61 筆時，核對機制（當時已存在）條件包含「`git status --porcelain` 為空」，
 卻仍放行了漏掉 `w629/index.html` 的 commit——**因為 `git status` 回報乾淨，
 而磁碟上的檔案跟 HEAD 其實不一樣**。後果是工作區從此永遠不乾淨、
-四次排程連續 exit 3、**13 天無聲空轉**。
+四次排程連續 exit 3（當時的碼；退出碼已於 2026-11-09 改成 241～246，現在的「工作區不乾淨」是 **243**）、**13 天無聲空轉**。
 
 🔴 **根因已於 2026-11-09 用對照實驗確認：`core.fsmonitor` × Google Drive 的組合。**
 每組 1440 次檢查——G: 上 fsmonitor 開著時「已追蹤檔案被修改」**100% 看不到**（720/720），

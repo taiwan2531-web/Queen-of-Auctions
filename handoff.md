@@ -108,7 +108,7 @@ git config core.fsmonitor true ; git config core.untrackedCache true
 | 02:27–06:46 | 本機 GPU 批次 ＋ 雲端 Actions | 同一批 14 筆 `voice.mp3` 各生成一次，**14 個二進位檔衝突**要人工收 |
 
 **已處置**：
-- `run_pipeline.ps1` 加具名 Mutex（`Global\QueenOfAuctions-Pipeline`），重複執行回 **exit 6**。
+- `run_pipeline.ps1` 加具名 Mutex（`Global\QueenOfAuctions-Pipeline`），重複執行回 **exit 246**。
   用 Mutex 而不是鎖檔：鎖由 OS 持有，程序被砍或當掉自動釋放，
   **不會留下要人工清的卡死鎖**（已實測：持有中拒絕、持有者未釋放就結束後下一個拿得到）。
 - 雲端 `Generate Clone Voice` 移除 `on: push`，只剩 `workflow_dispatch` 手動觸發。
@@ -174,6 +174,10 @@ log 裡的中文會疊字（「爬爬蟲蟲」），是轉譯的編碼疊加，*
 | 10/31 | exit 3 | 同上 |
 | 11/4 | exit 3 | 同上 |
 | 11/7 | exit 3 | 同上。**13 天、四次，全程無聲** |
+
+> ⚠️ 上表的 exit 1～5 是**當時**的退出碼。2026-11-09 已改成 241～246
+> （舊碼會被工作排程器翻成 Win32 錯誤訊息而誤導），對照：
+> 1→241、2→242、3→243、4→244、5→245，另新增 246。
 | 11/8 23:49（手動） | 中止 | 被 11/9 00:02 那次的併發波及，停在第 3 步 |
 | 11/9 00:02（手動） | exit 2 | 步驟 3～7 完成，第 8 步 `git add` exit 128（併發）→ 人工補完 |
 | 11/9（人工收尾） | 成功 | 新增 98、更新 120、語音 218、清除 76 |
@@ -342,7 +346,7 @@ python apply_swipe_nav.py
   （檔案從 `<meta charset>` 開始）。`replace` 什麼都沒換、檔案位元沒變，
   測試於是「通過」了卻什麼都沒測到，還讓我一度誤判 fsmonitor 的結論有問題。
 
-- 🔴 **不要再開第二個產線實例。** 現在有 Mutex 會回 exit 6 擋下，但語音批次（`local_voice_batch.py`）
+- 🔴 **不要再開第二個產線實例。** 現在有 Mutex 會回 exit 246 擋下，但語音批次（`local_voice_batch.py`）
   **沒有鎖**，手動跑之前先確認沒有別的在跑：
   ```powershell
   Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Select ProcessId, CommandLine
@@ -359,7 +363,7 @@ python apply_swipe_nav.py
 - **保留期與就地更新必須成套**。若把保留期改回 7 天又用 `--no-update`，
   還在拍的物件會被當重複跳過、停在過期拍別而被隱藏，**從網站上消失**。
 - **爬蟲偶爾不給照片也不給座標**（w717、w877、w878）。上架當下會缺底圖，
-  後續排程若爬到資料會自動補齊；若一直沒有，完整性檢查會持續 exit 2。
+  後續排程若爬到資料會自動補齊；若一直沒有，完整性檢查會持續 exit 242。
 - **每批爬蟲都會有「嘉市」標籤錯置**，`fix_city_labels.py` 必跑，且**必須早於語音**。
 - **爬蟲的開標時間常是 `..` 之類的雜訊**。就地更新已處理，但**新增物件路徑仍原樣寫入**。
 - **專案 `.claude/settings.json` 的 deny 清單擋了 `Remove-Item`／`rm`／`git clean`／破壞性 git**，
