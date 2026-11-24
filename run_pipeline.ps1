@@ -77,10 +77,26 @@ $MAX_PURGE   = 300    # 單次清除上限。正常一次 60~130 筆；暴增代
 Start-Transcript -Path $LOG -Force | Out-Null
 
 function Say([string]$m) { Write-Host ("[{0}] {1}" -f (Get-Date -Format 'HH:mm:ss'), $m) }
+function Write-RunStatus([int]$code, [string]$why) {
+  # 每個結束點都寫一份狀態，手動跑也一樣（原本只有啟動器會寫，
+  # 11/24 手動補清除後檔案還停在 11/21 的 FAILED，會誤導下一個開工的人）。
+  # 排程時啟動器會在產線之後再寫一次，以啟動器的為準。
+  # 🔴 -DryRun 不寫：否則排程失敗後有人跑 -DryRun 測試，會用 OK 蓋掉真正的 FAILED。
+  if ($DryRun) { return }
+  try {
+    $mark = if ($code -eq 0) { 'OK' } else { 'FAILED' }
+    $txt  = "{0}  {1}  exit={2}  {3}  {4}（run_pipeline.ps1）" -f `
+      (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $mark, $code, $why, (Split-Path $LOG -Leaf)
+    [IO.File]::WriteAllText((Join-Path $LOG_DIR 'LAST-RESULT.txt'), $txt,
+                            (New-Object Text.UTF8Encoding $false))
+  } catch { }
+}
+
 function Die([string]$m, [int]$code) {
   Say "❌ 中止：$m"
   Say "   工作區狀態如下（供你判斷要不要手動收拾）："
   & git -C $SITE_REPO status --short
+  Write-RunStatus $code $m
   Stop-Transcript | Out-Null
   exit $code
 }
@@ -216,7 +232,11 @@ if ($fsm -and $fsm -ne 'false') {
   GitLogged @('update-index', '--really-refresh')
   $global:LASTEXITCODE = 0   # 上面幾個就算回非 0 也不該讓產線停下來
 }
-$dirty = & git -C $SITE_REPO status --porcelain
+# --untracked-files=normal 要寫死，不能依賴設定。
+# 下面自癒放行 '?? wNNN/voice.mp3' 這類重生檔，前提是 git 把「整個未追蹤的資料夾」
+# 顯示成 '?? w1189/'（孤兒資料夾、照擋）。若有人或工具設了 status.showUntrackedFiles=all，
+# 孤兒資料夾會被拆成逐檔，裡面的 photo.jpg 就會被當成重生檔放行（2026-11-25 實測）。
+$dirty = & git -C $SITE_REPO status --porcelain --untracked-files=normal
 if ($dirty) {
   Say '工作區有未 commit 的變動：'
   $dirty | ForEach-Object { Say "    $_" }
@@ -260,6 +280,11 @@ if ($dirty) {
     if ($ln.Length -lt 4) { $unsafe += $ln; continue }
     $code = $ln.Substring(0, 2)
     $path = $ln.Substring(3).Trim().Trim('"')
+    # 就地更新會先 commit 刪除 voice.mp3／card.jpg／hero.jpg，之後語音與燒價圖才重生。
+    # 若在這中間被中斷，重生的檔案是未追蹤 '??'。git 對「整個未追蹤的資料夾」
+    # 只顯示 '?? w123/'（帶斜線、不列檔名），只有已追蹤資料夾裡的新檔才列出檔名，
+    # 所以可以精準放行：'?? wNNN/<衍生檔>' 收，'?? wNNN/'（孤兒資料夾）照擋。
+    if ($code -eq '??' -and $path -match '^w\d+/(voice\.mp3|card\.jpg|hero\.jpg|photo\.jpg|map\.jpg)$') { continue }
     if ($okCodes -notcontains $code -or $path -notmatch $own) { $unsafe += $ln; continue }
 
     if ($path -eq '104woo.html') {
@@ -353,6 +378,7 @@ if ($s.new -eq 0 -and $s.updates -eq 0) {
   Say '✅ 無異動（新物件 0 筆、更新 0 筆）'
   Invoke-Purge
   Push-Pending '無異動路徑'
+  Write-RunStatus 0 "無異動，清除 $($script:nPurge) 筆"
   Stop-Transcript | Out-Null
   exit 0
 }
@@ -450,5 +476,6 @@ if ($missing.Count -gt 0) {
 Invoke-Purge
 Push-Pending '收尾'
 Say "===== 完成：新增 $nAdd 筆、更新 $nUpd 筆、清除 $script:nPurge 筆 ====="
+Write-RunStatus 0 "新增 $nAdd 筆、更新 $nUpd 筆、清除 $script:nPurge 筆"
 Stop-Transcript | Out-Null
 exit 0
