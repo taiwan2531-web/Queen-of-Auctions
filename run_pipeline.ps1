@@ -106,6 +106,22 @@ function GitLogged([string[]]$ArgList) {
   $global:LASTEXITCODE = $code
 }
 
+function PyLogged([string]$exe, [string[]]$ArgList) {
+  # 跟 GitLogged 同樣的理由：Start-Transcript 不收原生指令的 stderr。
+  # 2026-11-11 起 purge 連續四次 exit 2，log 裡只有退出碼、沒有任何原因，
+  # 查了兩週才發現是 argparse 的 usage 訊息走 stderr 被吞掉了。
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try {
+    $raw  = & $exe @ArgList 2>&1
+    $code = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $prev
+  }
+  foreach ($l in @($raw)) { $t = [string]$l; if ($t.Trim()) { Say "      $t" } }
+  $global:LASTEXITCODE = $code
+}
+
 function Push-Pending([string]$why) {
   # 2026-11-09 審查發現（主張 6）：第 0 步自我修復建立的 commit，在「無異動」
   # 與 -DryRun 這兩條 exit 0 路徑上永遠不會被推送。本機會一直領先遠端，
@@ -129,15 +145,28 @@ $script:nPurge = 0
 function Invoke-Purge {
   Say '清除過期物件'
   $pstats = Join-Path $LOG_DIR "$stamp.purge.json"
-  & $PY_CRAWL (Join-Path $SITE_REPO 'purge_expired.py') --dry-run --stats-out $pstats | Out-Null
+  $purgePy = Join-Path $SITE_REPO 'purge_expired.py'
+  PyLogged $PY_CRAWL @($purgePy, '--dry-run', '--stats-out', $pstats)
   if ($LASTEXITCODE -ne 0) { Die "purge dry-run 失敗（exit $LASTEXITCODE）" 242 }
   $ps = Get-Content $pstats -Raw -Encoding UTF8 | ConvertFrom-Json
   $script:nPurge = [int]$ps.purge
   if ($script:nPurge -eq 0) { Say "   沒有需要清除的物件"; return }
   if ($script:nPurge -gt $MAX_PURGE) { Die "待清除 $($script:nPurge) 筆超過門檻 $MAX_PURGE——疑似下架判定出問題，不清除" 241 }
   Say "   清除 $($script:nPurge) 筆（保留 $($ps.kept) 筆）"
-  $pushArg = if ($NoPush) { @() } else { @("--push") }
-  & $PY_CRAWL (Join-Path $SITE_REPO 'purge_expired.py') --stats-out $pstats @pushArg
+  # 🔴 -DryRun 必須在這裡也成立。
+  # 「無異動」的判斷排在主流程的 $DryRun 檢查之前，而且會呼叫 Invoke-Purge；
+  # 若這裡不看 $DryRun，`run_pipeline.ps1 -DryRun` 在沒有新物件時會**真的刪掉**
+  # 過期物件並推送——與 .PARAMETER DryRun 寫的「不寫任何檔案、不 commit」矛盾。
+  # 2026-11-24 差一點就這樣誤刪 83 筆。
+  if ($DryRun) { Say '   -DryRun：只統計，不執行清除'; return }
+  # 🔴 不要寫成 `$a = if (...) { @() } else { @("--push") }` 再 `@a` splat。
+  # PowerShell 會把 if 輸出的單元素陣列展開成 String，splat 一個 String 是
+  # **逐字元**變成參數：實測 Python 收到 '-', '-', 'p', 'u', 's', 'h'，
+  # argparse 直接 exit 2。2026-11-11～11-21 連續四次清除失敗就是這樣來的。
+  # 改成明確建構的陣列，不經過 if 的管線輸出。
+  $pargs = @($purgePy, '--stats-out', $pstats)
+  if (-not $NoPush) { $pargs += '--push' }
+  PyLogged $PY_CRAWL $pargs
   NeedOk "purge_expired"
 }
 

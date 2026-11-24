@@ -24,6 +24,7 @@
   python purge_expired.py --push        # 刪除後一併 push
 """
 import argparse
+import io
 import json
 import os
 import re
